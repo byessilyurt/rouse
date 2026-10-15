@@ -29,7 +29,7 @@ public final class EventLog {
             JSONArray arr = o.optJSONArray("events");
             if (arr != null) log.events = arr;
         } catch (JSONException e) {
-            // Corrupt log: start fresh but keep seq monotonic is impossible to know; start at 1.
+            // Corrupt log: nothing recoverable, start fresh.
             return new EventLog();
         }
         return log;

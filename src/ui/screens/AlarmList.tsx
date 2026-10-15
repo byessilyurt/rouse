@@ -28,8 +28,15 @@ import { MissionIcons, WebDemoBanner } from './shared';
 const NAP_OPTIONS = [10, 20, 30, 45, 60] as const;
 
 export function AlarmList() {
-  const { now } = useApp();
+  const { now, repo } = useApp();
   const service = useService();
+  const [loadWarning, setLoadWarning] = useState<string | null>(() => {
+    try {
+      return repo.getLoadWarning();
+    } catch {
+      return null;
+    }
+  });
   const use24h = useUse24h();
   const t = useNow(30_000);
   const { health } = useHealth();
@@ -57,6 +64,18 @@ export function AlarmList() {
         <StatusPill tone={summary.tone} text={summary.text} href="#/health" ariaLabel={summary.ariaLabel} />
       </div>
       <WebDemoBanner collapsible />
+      {loadWarning && (
+        <Banner
+          tone="warn"
+          action={
+            <Button variant="secondary" onClick={() => setLoadWarning(null)}>
+              Got it
+            </Button>
+          }
+        >
+          Rouse couldn't read its saved data, so it started fresh. A copy of the old data was kept on this device.
+        </Banner>
+      )}
       {notice === 'sync-failed' && (
         <Banner
           tone="error"

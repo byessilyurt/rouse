@@ -24,7 +24,7 @@ public class ScheduleMathTest {
         return OffsetDateTime.parse(s).toInstant().toEpochMilli();
     }
 
-    private static int[] days(JSONArray arr) {
+    private static int[] days(JSONArray arr) throws Exception {
         int[] d = new int[arr.length()];
         for (int i = 0; i < d.length; i++) d[i] = arr.getInt(i);
         return d;

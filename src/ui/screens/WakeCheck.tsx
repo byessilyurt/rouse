@@ -40,9 +40,9 @@ export function WakeCheckScreen() {
   if (confirmed) {
     return (
       <Screen title="Still up?" chrome="none" customHeading>
-        <h1 tabIndex={-1} role="status">
-          Nice. Have a good day.
-        </h1>
+        <div role="status">
+          <h1 tabIndex={-1}>Nice. Have a good day.</h1>
+        </div>
       </Screen>
     );
   }

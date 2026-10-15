@@ -21,7 +21,11 @@ public final class Notifications {
     private Notifications() {}
 
     public static void ensureChannels(Context context) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) createChannels(context);
+    }
+
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
+    private static void createChannels(Context context) {
         NotificationManager nm = context.getSystemService(NotificationManager.class);
         if (nm == null) return;
 
@@ -143,7 +147,7 @@ public final class Notifications {
             .setOngoing(true)
             .setAutoCancel(false)
             .setContentIntent(uiPi)
-            .addAction(0, "I'm awake", confirmPi);
+            .addAction(R.drawable.ic_stat_rouse, "I'm awake", confirmPi);
         if (UserManagerCompat.isUserUnlocked(context)) {
             b.setFullScreenIntent(uiPi, true);
         }

@@ -125,11 +125,11 @@ public final class RingService extends Service {
     private boolean startAsForeground(Notification n) {
         Notifications.ensureChannels(this);
         try {
-            int type = 0;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                type = ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK;
+                ServiceCompat.startForeground(this, RouseConstants.NOTIF_RING, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
+            } else {
+                startForeground(RouseConstants.NOTIF_RING, n);
             }
-            ServiceCompat.startForeground(this, RouseConstants.NOTIF_RING, n, type);
             return true;
         } catch (RuntimeException ex) {
             DiagLog.e("ring", "startForeground failed", ex);

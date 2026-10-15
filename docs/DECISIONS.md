@@ -138,3 +138,23 @@ Decision: the Java side schedules alarms, starts the foreground service, plays a
 **D-044 — An empty custom typing phrase falls back to a bundled phrase.** The user never gets an empty or impossible task.
 
 **Known limitation:** the motion thresholds (shake, steps, squat) were tuned on synthetic signals and still need on-device tuning. They are disclosed as cheatable in MISSION_META.
+
+## Implementation phase: native (native agent, adopted)
+
+**D-045 — The original alarm volume is saved in its own pref**, not inside the episode as plan §3.5 said. VolumeLock runs on the main thread and episode writes happen on the state thread, so sharing one record would race. On a crash, reconcile still restores the volume.
+
+**D-046 — `lastHandledFireAt` de-duplicates a main fire against a catch-up ring,** and the next schedule is computed from max(now, lastHandledFireAt). A fire delivered a few milliseconds early can't double-ring.
+
+**D-047 — Test-ring collisions.** A real alarm silently supersedes a test episode. A new test replaces an older test. A test is dropped while a real episode exists. Merged one-off alarms are consumed too.
+
+**D-048 — A safety re-ring keeps `uiReady`** and doesn't re-arm the 10 s readiness timer when JS is already up, so the native fallback never pops over a live ring screen. Snooze and wake-check re-rings reset it.
+
+**D-049 — Calls are detected by polling `AudioManager.getMode()` every 2 s,** so no READ_PHONE_STATE permission is needed. During a call the alarm vibrates even if vibration is off for that alarm.
+
+**D-050 — The FGS is START_NOT_STICKY.** Recovery comes from the safety alarm (D-017), not a sticky restart.
+
+**D-051 — Android 15+ FGS start fallback.** If starting the FGS from the receiver is refused, the ring notification is still posted and MainActivity starts the service when it opens.
+
+**D-052 — Diagnostics.** `getNativeDiagnostics()` exists in the native backend, but the UI may only import `platform/index.ts` (import matrix). Exposing it in the UI is deferred.
+
+Verification note: all 29 Java sources compile with `javac -Xlint:all` against hand-written stubs, and the 30 JUnit tests pass locally. That includes all 42 shared vectors and a year-long sweep over 9 zones matching `ZonedDateTime.of`. The real Gradle compile, lint, and the APK permission gate run only in CI. Device-only risks are listed in docs/android.md.

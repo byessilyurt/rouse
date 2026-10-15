@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, 'ccr-**']
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   web:
-    name: Web — typecheck, unit, build, e2e
+    name: Web — gates, typecheck, unit, build, e2e
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +21,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: No network APIs in src (D-001, D-025)
+        run: npm run check:network
+      - name: No notImplemented stubs left
+        run: |
+          if grep -rn "notImplemented" src; then
+            echo "::error::notImplemented is still referenced in src/ (see list above)"
+            exit 1
+          fi
+      - name: Bundled sounds match their recipes (gen-sounds --check)
+        run: npm run check:sounds
       - run: npx playwright install --with-deps chromium
       - run: npm run typecheck
       - run: npm test
@@ -34,7 +44,7 @@ jobs:
           retention-days: 7
 
   android:
-    name: Android — debug APK
+    name: Android — debug APK, lint, unit tests, permission gate
     runs-on: ubuntu-latest
     needs: web
     steps:
@@ -52,9 +62,26 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npx cap sync android
-      - name: Assemble debug APK and run lint
+      - name: Assemble debug APK, run lint and JVM unit tests
         working-directory: android
-        run: ./gradlew --no-daemon assembleDebug lintDebug
+        run: ./gradlew --no-daemon assembleDebug lintDebug testDebugUnitTest
+      - name: APK permission gate (no INTERNET, has USE_EXACT_ALARM)
+        run: |
+          set -euo pipefail
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -n 1)
+          AAPT2="${BT%/}/aapt2"
+          APK=$(ls android/app/build/outputs/apk/debug/*.apk | head -n 1)
+          echo "Using $AAPT2 on $APK"
+          "$AAPT2" dump permissions "$APK" | tee apk-permissions.txt
+          if grep -q "android.permission.INTERNET'" apk-permissions.txt; then
+            echo "::error::The APK requests android.permission.INTERNET (D-025 forbids it)"
+            exit 1
+          fi
+          if ! grep -q "android.permission.USE_EXACT_ALARM'" apk-permissions.txt; then
+            echo "::error::The APK is missing android.permission.USE_EXACT_ALARM"
+            exit 1
+          fi
+          echo "Permission gate passed."
       - uses: actions/upload-artifact@v4
         with:
           name: rouse-debug-apk
@@ -63,6 +90,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: android-lint-report
-          path: android/app/build/reports/lint-results-debug.*
+          name: android-reports
+          path: |
+            android/app/build/reports/lint-results-debug.*
+            android/app/build/reports/tests/testDebugUnitTest/
+            android/app/build/test-results/testDebugUnitTest/
+            apk-permissions.txt
+          if-no-files-found: ignore
           retention-days: 7

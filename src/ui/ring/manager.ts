@@ -106,6 +106,7 @@ export class RingManager {
   }
 
   private createController(ring: ActiveRing, key: string): RingController {
+    console.log("DBG create", key);
     this.disposeController();
     // Same-episode progress keeps the plan fixed (snooze return, re-ring) and restores missions after a crash (safety).
     const restored = ring.isTest ? null : safe(() => this.deps.repo.loadRingProgress(ring.sessionId));
@@ -139,6 +140,7 @@ export class RingManager {
   }
 
   private finished(s: RingSession, ring: ActiveRing) {
+    console.log("DBG finished", s.phase, !!this.terminalHandler, this.suppressTerminal);
     const kind = (s.phase === 'dismissed' || s.phase === 'snoozed' ? s.phase : 'ended') as TerminalKind;
     safe(() => this.deps.service.recordRingOutcome(s, ring.isTest));
     const info: FinishedInfo = { kind, session: { ...s }, isTest: ring.isTest, at: this.deps.now(), alarmLabel: ring.alarm.label };
