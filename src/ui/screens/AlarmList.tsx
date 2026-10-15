@@ -215,7 +215,7 @@ function AlarmCard({ alarm: a, now, use24h, weekStart }: { alarm: Alarm; now: nu
             <time>{tp.time}</time>
             {tp.suffix && <small>{tp.suffix}</small>}
           </span>
-          <span class="alarm-label ellipsis">{label}</span>
+          <span class="alarm-label">{label}</span>
           <span class="muted small">{repeat}</span>
           <MissionIcons alarm={a} />
           {skipping && (

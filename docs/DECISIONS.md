@@ -200,3 +200,15 @@ Verification note: all 29 Java sources compile with `javac -Xlint:all` against h
 ## Process
 
 **D-069 — Model allocation for cost (user request).** From the gap-filling phase on, implementation, documentation and audit agents run on Sonnet 5.5 at high effort. Opus is reserved for the hardest reasoning. The orchestrator verifies every Sonnet output independently: it re-runs `npm run check` and the real Gradle build, reviews the diff, and does a separate final verification pass. Quality gates are unchanged.
+
+## Gap filling (Sonnet agents, verified by the orchestrator)
+
+**D-070 — The pending test alarm is backend truth.** `getPendingTest()` and `cancelTest()` were added to AlarmBackend and RousePlugin (additive). The Reliability screen and the editor both read the backend, so the countdown survives screen changes and process death. A cancelled test is never reported as "didn't ring".
+
+**D-071 — Cancelling a running test reuses the dismiss path** with `no-mission`, and only for test episodes. A real episode is never touched. No new log, stats or wake-check paths.
+
+**D-072 — The call-mode hold is capped at 10 minutes** (`CALL_MODE_CAP_MS`, [JAVA]; resolves the open D-049 item). The pure `CallPolicy` is JUnit-tested. A stuck VoIP mode can't silence an alarm for more than 10 minutes. A genuine call longer than 10 minutes gets alarm audio, which is the right trade for an alarm clock.
+
+**D-073 — Diagnostics are plain text from the backend and label-free by construction.** The shared formatter's input type can't carry labels, QR codes or phrases. "Copy diagnostics" on the Reliability screen falls back to a selected textarea if the clipboard is blocked.
+
+Orchestrator review of gap A: I read the `CallPolicy` + `RingService` diff and the `RingEngine.cancelTest` diff. `cancelTest` runs on the state thread through the plugin's `run` wrapper, the same as `dismiss`. The agent's real Gradle build is BUILD SUCCESSFUL (0 lint errors, JUnit 37/37), and `npm run check` passes (330 unit, 27 e2e).
