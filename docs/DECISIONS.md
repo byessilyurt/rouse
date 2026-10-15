@@ -182,3 +182,17 @@ Verification note: all 29 Java sources compile with `javac -Xlint:all` against h
 **D-062 — On phones the time picker steppers stack vertically,** so 64 px targets fit at 412 px.
 
 **D-063 — "I'm up: turn it off" from the Snoozed screen** runs the missions on the snoozed episode and dismisses it (design §3.9). Native `dismiss()` must accept the snoozed state; this was routed to the native review.
+
+## Native review (independent reviewer agent, adopted)
+
+**D-064 — Error isolation on the ring path.** Every helper step in RingService runs isolated (`safely()`), the notification falls back to a placeholder so `startForeground` always runs, and `player.start` is always reached. In RingEngine, `startRingService` + `emitRing` run in a `finally` after the episode is persisted. Reason: an uncaught exception there caused a crash loop where every safety re-ring crashed too, so the alarm never rang. This was the worst bug found.
+
+**D-065 — `lastHandledFireAt` is reset on reconcile when it lies more than 60 s in the future** (the clock was set backwards). Otherwise real alarms would be dropped as "already handled".
+
+**D-066 — Dismiss is valid from 'snoozed'** (implements D-063). It cancels RC_SNOOZE, then follows the normal dismiss path. `setSilenced` and `missionUiReady` are no-ops while snoozed.
+
+**D-067 — The refused-FGS retry (D-051) moved to `onResume`** of MainActivity and FallbackMissionActivity. That is the first point where the activity is visible, so a foreground-service start is allowed there.
+
+**D-068 — Real Android build verified locally.** The reviewer found that dl.google.com and a Google-hosted Maven Central mirror are reachable from this container, which contradicts the assumption in D-003. It ran `assembleDebug lintDebug testDebugUnitTest` for real: BUILD SUCCESSFUL, 0 lint errors, 30/30 JUnit, and the aapt2 permission gate passed. The mirror init script stays in the scratch directory only. No repo build files depend on it. CI remains the source of truth.
+
+**Open, deferred to the gap phase:** D-049 call detection treats a stuck MODE_IN_COMMUNICATION (VoIP) as "in call", which could mean vibrate-only indefinitely. A cap is needed.
