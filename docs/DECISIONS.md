@@ -54,3 +54,63 @@ Decision:
 **D-008 — Native owns ringing; the WebView only renders missions**
 Context: analysis §7.6. A WebView cold start takes 1–3 s and can crash.
 Decision: the Java side schedules alarms, starts the foreground service, plays audio on USAGE_ALARM with a bundled backup tone, vibrates, posts the full-screen notification, and schedules a re-ring safety alarm before it starts ringing. Native storage (device-protected SharedPreferences) holds a JSON mirror of the alarms so boot rescheduling never needs JS. The mission UI runs in the WebView. If the WebView doesn't report "mission UI ready" within 10 s, the native side shows a native math fallback, so the user is never stuck.
+
+## Planning phase (planner agent, adopted by the orchestrator)
+
+**D-009 — Contract-first parallel build.** Shared types, the backend and plugin interfaces, and signature stubs for every core and missions module are written up front. Agents fill in bodies only and flag any signature change. The UI compiles before core exists.
+
+**D-010 — Time math is explicit and zone-injectable; Java uses java.time with core-library desugaring.** A DST gap shifts the alarm later by the gap length (02:30 → 03:30, not the 03:00 the analysis suggested). An overlap uses the earlier instant. Both are the native java.time and ECMAScript semantics, so neither side needs custom rules.
+
+**D-011 — Dual computation with a cross-check.** Native computes next-fire itself (it has to, for boot) and returns it from `syncAlarms`. TS compares, and a mismatch shows on the health screen. Both test suites use the same golden vectors file.
+
+**D-012 — Shake, steps and squat use JS `devicemotion`, not the native step sensor.** No ACTIVITY_RECOGNITION permission, fully unit-testable, slightly more cheatable (disclosed in the UI).
+
+**D-013 — One main alarm PendingIntent plus fixed request codes** for snooze, safety, wake-check, deadline, test, deferred start and bedtime. No PI leaks.
+
+**D-014 — Collision policy.**
+- Same instant: the alarms merge into one ring.
+- An alarm that fires while another is ringing is logged as `merged`.
+- An alarm that fires during a snooze or wake check supersedes it.
+- Test rings never supersede a real episode.
+
+**D-015 — Ring progress persists only for crash recovery.** A safety re-ring keeps completed missions; a snooze return or a wake-check re-ring starts fresh.
+
+**D-016 — Snooze is capped at 10 and never unlimited.** There is no snooze on a wake-check re-ring.
+
+**D-017 — Silence-while-solving is a native lease that fails loud** (at most 60 s; it unmutes at full volume on expiry or crash).
+
+**D-018 — One WebView.** The ring UI is MainActivity with dynamic showWhenLocked. A separate directBootAware native activity handles the fallback.
+
+**D-019 — Wake-up check.** Both the check and its deadline are scheduled with setAlarmClock. At most 2 re-rings. Confirming takes one tap, in the app or from the notification action.
+
+**D-020 — FGS type `mediaPlayback`, started only from alarm-clock receivers or the foreground activity.** Boot and time-change paths defer ringing through `setAlarmClock(now+5 s)`.
+
+**D-021 — Volume lock.** STREAM_ALARM is forced to the alarm's volume, restored if it changes, and the volume keys are consumed while ringing. The original is restored afterwards.
+
+**D-022 — Custom sounds are copied into device-protected storage and excluded from backups.** On import, a missing custom sound becomes the default sound.
+
+**D-023 — Quick nap is a one-off alarm with `deleteAfterRing`,** rounded up to the minute.
+
+**D-024 — Bundled tones are synthesised from shared recipes.** They are rendered to WAV by a deterministic script and committed, and played via WebAudio on the web. CC0 by construction.
+
+**D-025 — No INTERNET permission** (removed with `tools:node="remove"`). A CI no-network grep and an APK permission gate enforce it. If a device test shows the WebView needs it, revert to keeping INTERNET and rely on the grep.
+
+**D-026 — Native → JS state changes go through a durable, seq-numbered log** (`getLog`/`ackLog`), applied idempotently.
+
+**D-027 — Hash routing.** JS reads `getActiveRing()` at startup and routes itself.
+
+**D-028 — Ringing never auto-stops.** Answer to planner open question 1: keep it. Auto-stop would break the product promise, and the safety re-ring, missed-stats and health screen already make failures visible.
+
+**D-029 — Missing capability at ring time → fallback mission.** Saving a QR mission requires camera permission and a passing test scan.
+
+**D-030 — Test rings use the full real pipeline** but write no stats, schedule no wake check and never supersede a real episode.
+
+**D-031 — Java persistence uses device-protected SharedPreferences JSON with `commit()`.** No Room or Gson.
+
+**D-032 — The native fallback is 5 two-digit math problems.**
+
+## Orchestrator reconciliation
+
+**D-033 — design.md vs plan.md precedence.** The planner and designer worked in parallel, and their route names differ (e.g. `#/` vs `#/alarms`, `#/wake-check` vs `#/wakecheck`). Rule: **plan.md + the TS contract win on behaviour, data and the native contract; design.md wins on screens, copy, visuals and route names.** Routing is entirely JS-side (D-027), so route names don't touch native code. Field names come from `src/core/types.ts`, so the design's `fallbackAfterFailures` maps to `settings.fallback.*`.
+
+**D-034 — Wake-up check confirmation is a single tap** (planner open question 3). Requiring a mission for "I'm awake" would make a missed check punitive twice over. The re-ring itself already requires the full mission.
