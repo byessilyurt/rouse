@@ -42,7 +42,7 @@ img, svg { flex-shrink: 0; }
 .shell.locked { overscroll-behavior: none; user-select: none; -webkit-user-select: none; }
 .shell.locked .shell-main { padding-top: max(var(--sp-4), env(safe-area-inset-top)); min-height: 100dvh; }
 .shell h1[tabindex="-1"]:focus { outline: none; }
-.shell h1[tabindex="-1"]:focus-visible { outline: 3px solid var(--focus); }
+.shell h1[tabindex="-1"]:focus-visible { outline: none; }
 
 .topbar {
   position: sticky; top: 0; z-index: 20; height: 56px; padding-top: env(safe-area-inset-top);
@@ -184,6 +184,7 @@ button.list-row, a.list-row { cursor: pointer; }
   min-width: 4.5em; min-height: 48px; display: flex; align-items: center; justify-content: center;
   font-variant-numeric: tabular-nums; font-size: var(--fs-lg); border-radius: var(--r-sm); padding: 0 var(--sp-2);
 }
+.stepper.ring .stepper-row { flex-direction: column; }
 .stepper.ring .stepper-btn { width: 64px; height: 64px; }
 .stepper.ring .stepper-value {
   width: 96px; min-width: 96px; font-size: var(--fs-clock-hero); font-weight: var(--fw-clock); min-height: 64px; cursor: text;
@@ -195,6 +196,7 @@ button.list-row, a.list-row { cursor: pointer; }
 .timepicker { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); }
 .timepicker-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--sp-3); }
 .timepicker-row .stepper-row { gap: var(--sp-1); }
+.timepicker-row { flex-wrap: nowrap; }
 .timepicker .colon { font-size: var(--fs-clock-hero); font-weight: var(--fw-clock); }
 .timepicker .ampm [role="radio"] { min-width: 64px; min-height: 64px; }
 @media (max-width: 380px) {

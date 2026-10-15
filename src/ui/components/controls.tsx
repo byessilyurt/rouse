@@ -282,7 +282,7 @@ export function Stepper({
         </span>
       )}
       <div class="stepper-row">
-        {btn(-1)}
+        {size === 'ring' ? btn(1) : btn(-1)}
         {editing ? (
           <input
             ref={inputRef}
@@ -341,7 +341,7 @@ export function Stepper({
             {format(value)}
           </div>
         )}
-        {btn(1)}
+        {size === 'ring' ? btn(-1) : btn(1)}
       </div>
       {error && (
         <p class="error-text" id={errId}>

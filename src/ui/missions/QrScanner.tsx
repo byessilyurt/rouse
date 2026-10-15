@@ -189,7 +189,7 @@ export function QrScanner({ onCode, paused = false, onStateChange, retryKey = 0 
 
   return (
     <div class="stack-sm">
-      <div class="camera-box">
+      <div class="camera-box" data-testid="scanner" data-scanner-state={state}>
         <video ref={videoRef} muted playsInline autoplay aria-hidden="true" />
         {state === 'running' && <div class="camera-guide" aria-hidden="true" />}
         {state === 'starting' && (

@@ -144,3 +144,30 @@ test('11 · a one-off alarm is turned off after ringing; a nap is deleted', asyn
   const log = await page.evaluate(() => window.__rouseTest!.inspect().log.map((e) => e.type));
   expect(log.filter((t) => t === 'one-off-consumed')).toHaveLength(2);
 });
+
+test('editor: "Try it now" practice and "Test this alarm" with "End test"', async ({ page }) => {
+  await seed(page);
+  await open(page);
+  await page.getByRole('button', { name: 'Create your first alarm' }).click();
+  await page.getByRole('button', { name: /^1: Math/ }).click();
+  await page.getByRole('radio', { name: 'Very easy' }).click();
+  await page.getByRole('button', { name: 'Decrease Problems' }).click();
+  await page.getByRole('button', { name: 'Decrease Problems' }).click();
+  await expect(page.getByRole('spinbutton', { name: 'Problems' })).toHaveAttribute('aria-valuenow', '1');
+  await page.getByRole('button', { name: 'Try it now' }).click();
+  await expect(page.getByText('Practice', { exact: true })).toBeVisible();
+  await expect(page.getByTestId('idle-meter')).toHaveCount(0);
+  const { solveMath } = await import('./helpers');
+  await solveMath(page, 1);
+  await page.getByRole('button', { name: 'Back to mission' }).click();
+  await expect(page.getByRole('heading', { name: 'Math', level: 1 })).toBeVisible();
+  await page.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByRole('button', { name: /^1: Math, Very easy · 1 problem/ })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Test this alarm' }).click();
+  await expect(page.getByText("Test alarm · won't count in stats")).toBeVisible({ timeout: 10_000 });
+  await page.getByRole('button', { name: 'End test' }).click();
+  await expect(page).toHaveURL(/#\/alarm\/new$/);
+  await expect(page.getByRole('heading', { name: 'New alarm' })).toBeVisible();
+  expect(await page.evaluate(() => window.__rouseTest!.inspect().log)).toEqual([]);
+});

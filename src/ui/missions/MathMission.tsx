@@ -11,18 +11,22 @@ export function MathMission({ config, rng, onSuccess, onFailure, onActivity, onP
   const [input, setInput] = useState('');
   const [fb, setFb] = useFeedback();
   const state = useRef({ i, input });
-  state.current = { i, input };
   const done = useRef(false);
 
   useEffect(() => onProgress(Math.min(i + 1, problems.length), problems.length), [i]);
 
+  const setValue = (v: string) => {
+    state.current = { ...state.current, input: v };
+    setInput(v);
+  };
   const digit = (d: string) => {
     onActivity();
-    setInput((v) => (v.length >= 7 ? v : v + d));
+    const v = state.current.input;
+    if (v.length < 7) setValue(v + d);
   };
   const del = () => {
     onActivity();
-    setInput((v) => v.slice(0, -1));
+    setValue(state.current.input.slice(0, -1));
   };
   const enter = () => {
     onActivity();
@@ -31,13 +35,16 @@ export function MathMission({ config, rng, onSuccess, onFailure, onActivity, onP
     if (!p || done.current || value === '') return;
     if (checkMathAnswer(p, value)) {
       setFb(null);
-      setInput('');
+      setValue('');
       if (idx + 1 >= problems.length) {
         done.current = true;
         onSuccess();
-      } else setI(idx + 1);
+      } else {
+        state.current = { i: idx + 1, input: '' };
+        setI(idx + 1);
+      }
     } else {
-      setInput('');
+      setValue('');
       setFb('Not quite. Try again.');
       onFailure('wrong-answer');
     }

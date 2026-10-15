@@ -232,7 +232,7 @@ export function PracticeScreen({ id, index }: { id: string; index: number }) {
         </p>
         <p>That's how it works when the alarm rings.</p>
         <Button variant="primary" block onClick={back} data-initial-focus="">
-          Back to settings
+          Back to mission
         </Button>
       </Screen>
     );

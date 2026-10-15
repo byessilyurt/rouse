@@ -63,6 +63,7 @@ export async function fireNextTimer(page: Page): Promise<void> {
 }
 
 export async function injectScan(page: Page, text: string): Promise<void> {
+  await expect(page.locator('[data-scanner-state="running"]')).toHaveCount(1);
   await page.evaluate((t) => window.__rouseTest!.injectScan(t), text);
 }
 
