@@ -114,3 +114,27 @@ Decision: the Java side schedules alarms, starts the foreground service, plays a
 **D-033 — design.md vs plan.md precedence.** The planner and designer worked in parallel, and their route names differ (e.g. `#/` vs `#/alarms`, `#/wake-check` vs `#/wakecheck`). Rule: **plan.md + the TS contract win on behaviour, data and the native contract; design.md wins on screens, copy, visuals and route names.** Routing is entirely JS-side (D-027), so route names don't touch native code. Field names come from `src/core/types.ts`, so the design's `fallbackAfterFailures` maps to `settings.fallback.*`.
 
 **D-034 — Wake-up check confirmation is a single tap** (planner open question 3). Requiring a mission for "I'm awake" would make a missed check punitive twice over. The re-ring itself already requires the full mission.
+
+## Implementation phase: core (core agent, adopted)
+
+**D-035 — No unmute right before dismiss or snooze.** Unsilencing on the way out would blast the alarm for a moment. The controller unsilences only when it returns to alerting.
+
+**D-036 — "Back to alarm" from a mission** reuses `cancelSnoozeMission()` and keeps progress and the failure count. No contract change.
+
+**D-037 — A mission that breaks mid-ring unlocks the fallback immediately.** If the camera is denied or the sensor goes silent, `missionFailed(MISSION_UNAVAILABLE)` makes the fallback available at once (design §3.8, D-029).
+
+**D-038 — The dismissal plan is fixed for an episode.** Random missions don't change after a snooze. The plan is reused by sessionId, and capabilities are re-checked.
+
+**D-039 — A rejected backend dismiss or snooze returns to alerting with progress kept.** Ring events that arrive mid-call are held and replayed. There is no false "ended" state.
+
+**D-040 — Streaks count only days with an episode.** Days without one neither count nor break the streak, so weekday-only alarms keep their streak. A missed or superseded episode, or a failed wake check, breaks it. An unfinished episode today doesn't.
+
+**D-041 — Each WakeRecord starts as 'abandoned'** and resolves from the native log (dismissed, superseded or missed).
+
+**D-042 — A one-off-consumed event is ignored if the alarm was edited after it fired.** A user who re-enabled the alarm keeps it.
+
+**D-043 — Quick nap takes its missions from the alarm defaults.** "Require mission: off" saves it with `missions: []`.
+
+**D-044 — An empty custom typing phrase falls back to a bundled phrase.** The user never gets an empty or impossible task.
+
+**Known limitation:** the motion thresholds (shake, steps, squat) were tuned on synthetic signals and still need on-device tuning. They are disclosed as cheatable in MISSION_META.

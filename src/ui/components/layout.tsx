@@ -2,7 +2,7 @@
  * Layout & display components (design.md §5): Screen shell, TopBar, TabBar, Card, ListRow, Banner,
  * StatusPill, CheckRow, ProgressRing, IdleMeter, Spinner.
  */
-import type { ComponentChildren, JSX } from 'preact';
+import type { AriaRole, ComponentChildren, HTMLAttributes } from 'preact';
 import { useEffect, useId, useState } from 'preact/hooks';
 import { Icon, type IconName } from '../icons';
 import { IconButton } from './Button';
@@ -80,7 +80,7 @@ export function TabBar({ current }: { current: 'alarms' | 'stats' | 'settings' }
 }
 
 // ── Card / ListRow ────────────────────────────────────────────────────────
-export function Card({ children, class: cls, ...rest }: JSX.HTMLAttributes<HTMLDivElement> & { children?: ComponentChildren }) {
+export function Card({ children, class: cls, ...rest }: HTMLAttributes<HTMLDivElement> & { children?: ComponentChildren }) {
   return (
     <div {...rest} class={`card${cls ? ` ${cls}` : ''}`}>
       {children}
@@ -282,11 +282,11 @@ export function ProgressRing({ value, max, size = 240, label, center, mode = 'pr
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const frac = max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
-  const roleProps =
+  const roleProps: HTMLAttributes<HTMLDivElement> =
     mode === 'timer'
-      ? { role: 'timer', 'aria-label': label }
+      ? { role: 'timer' as AriaRole, 'aria-label': label }
       : {
-          role: 'progressbar',
+          role: 'progressbar' as AriaRole,
           'aria-label': label,
           'aria-valuenow': value,
           'aria-valuemin': 0,

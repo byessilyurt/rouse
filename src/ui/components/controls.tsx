@@ -1,7 +1,7 @@
 /**
  * Form controls (design.md §5): Toggle, Segmented, Stepper, TimePicker, DayChips, Keypad, Select, TextField.
  */
-import type { ComponentChildren, JSX } from 'preact';
+import type { ComponentChildren, InputHTMLAttributes } from 'preact';
 import { useEffect, useId, useRef, useState } from 'preact/hooks';
 import type { Weekday } from '../../core/types';
 import { Icon } from '../icons';
@@ -544,7 +544,7 @@ export function Select<T extends string | number>({ label, value, options, onCha
   );
 }
 
-export interface TextFieldProps extends Omit<JSX.InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value'> {
+export interface TextFieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange' | 'value' | 'type' | 'role'> {
   label: string;
   value: string;
   onValue: (v: string) => void;

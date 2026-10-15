@@ -107,7 +107,8 @@ export class RingManager {
 
   private createController(ring: ActiveRing, key: string): RingController {
     this.disposeController();
-    const restored = ring.source === 'safety' ? safe(() => this.deps.repo.loadRingProgress(ring.sessionId)) : null;
+    // Same-episode progress keeps the plan fixed (snooze return, re-ring) and restores missions after a crash (safety).
+    const restored = ring.isTest ? null : safe(() => this.deps.repo.loadRingProgress(ring.sessionId));
     const ctrl = new RingController(
       ring,
       {

@@ -2,7 +2,7 @@
  * Inline SVG icons (design.md §6). Original simple paths; no icon font, no network.
  * Icons are decorative (aria-hidden) — the surrounding control supplies the accessible name.
  */
-import type { ComponentChildren, JSX } from 'preact';
+import type { ComponentChildren, CSSProperties } from 'preact';
 import type { MissionType } from '../core/types';
 
 export type IconName =
@@ -166,7 +166,7 @@ export interface IconProps {
   size?: number;
   class?: string;
   title?: string;
-  style?: JSX.CSSProperties | string;
+  style?: CSSProperties | string;
 }
 
 export function Icon({ name, size = 24, class: cls, style }: IconProps) {

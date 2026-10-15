@@ -181,7 +181,7 @@ function AlarmCard({ alarm: a, now, use24h, weekStart }: { alarm: Alarm; now: nu
   const toggle = async (on: boolean) => {
     await service.setEnabled(a.id, on);
     if (on) {
-      const at = nextOccurrence({ ...a, enabled: true }, clock());
+      const at = nextOccurrence(a, clock());
       toast(at ? `Alarm set for ${formatIn(at - clock())}` : 'Alarm on');
     } else {
       toast('Alarm off');

@@ -2,13 +2,13 @@
  * Button / IconButton (design.md §5). Disabled state uses aria-disabled so controls stay focusable;
  * clicks are swallowed and the reason is shown next to the control by the caller.
  */
-import type { ComponentChildren, JSX, Ref } from 'preact';
+import type { ComponentChildren, HTMLAttributes, Ref, TargetedMouseEvent } from 'preact';
 import { Icon, type IconName } from '../icons';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'text' | 'danger' | 'danger-outline' | 'danger-text';
 export type ButtonSize = 'md' | 'ring' | 'ring-primary';
 
-export interface ButtonProps extends Omit<JSX.HTMLAttributes<HTMLButtonElement>, 'size' | 'icon' | 'ref'> {
+export interface ButtonProps extends Omit<HTMLAttributes<HTMLButtonElement>, 'size' | 'icon' | 'ref' | 'role' | 'type'> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   icon?: IconName;
@@ -38,7 +38,7 @@ export function Button({
   if (size !== 'md') classes.push(`btn-${size}`);
   if (block) classes.push('btn-block');
   if (cls) classes.push(String(cls));
-  const handle = (e: JSX.TargetedMouseEvent<HTMLButtonElement>) => {
+  const handle = (e: TargetedMouseEvent<HTMLButtonElement>) => {
     if (ariaDisabled) {
       e.preventDefault();
       return;
@@ -67,7 +67,7 @@ export function Button({
   );
 }
 
-export interface IconButtonProps extends Omit<JSX.HTMLAttributes<HTMLButtonElement>, 'size' | 'icon' | 'label'> {
+export interface IconButtonProps extends Omit<HTMLAttributes<HTMLButtonElement>, 'size' | 'icon' | 'label' | 'role' | 'type'> {
   icon: IconName;
   label: string;
   size?: 48 | 64;
