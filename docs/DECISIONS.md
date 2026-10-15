@@ -196,3 +196,7 @@ Verification note: all 29 Java sources compile with `javac -Xlint:all` against h
 **D-068 — Real Android build verified locally.** The reviewer found that dl.google.com and a Google-hosted Maven Central mirror are reachable from this container, which contradicts the assumption in D-003. It ran `assembleDebug lintDebug testDebugUnitTest` for real: BUILD SUCCESSFUL, 0 lint errors, 30/30 JUnit, and the aapt2 permission gate passed. The mirror init script stays in the scratch directory only. No repo build files depend on it. CI remains the source of truth.
 
 **Open, deferred to the gap phase:** D-049 call detection treats a stuck MODE_IN_COMMUNICATION (VoIP) as "in call", which could mean vibrate-only indefinitely. A cap is needed.
+
+## Process
+
+**D-069 — Model allocation for cost (user request).** From the gap-filling phase on, implementation, documentation and audit agents run on Sonnet 5.5 at high effort. Opus is reserved for the hardest reasoning. The orchestrator verifies every Sonnet output independently: it re-runs `npm run check` and the real Gradle build, reviews the diff, and does a separate final verification pass. Quality gates are unchanged.
