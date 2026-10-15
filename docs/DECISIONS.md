@@ -158,3 +158,27 @@ Decision: the Java side schedules alarms, starts the foreground service, plays a
 **D-052 — Diagnostics.** `getNativeDiagnostics()` exists in the native backend, but the UI may only import `platform/index.ts` (import matrix). Exposing it in the UI is deferred.
 
 Verification note: all 29 Java sources compile with `javac -Xlint:all` against hand-written stubs, and the 30 JUnit tests pass locally. That includes all 42 shared vectors and a year-long sweep over 9 zones matching `ZonedDateTime.of`. The real Gradle compile, lint, and the APK permission gate run only in CI. Device-only risks are listed in docs/android.md.
+
+## Implementation phase: UI (UI agent, adopted)
+
+**D-053 — "End test" stops a test ring** through a temporary RingController with an empty plan. The dismiss runs as 'no-mission' (test rings only), and nothing is recorded.
+
+**D-054 — Ranges follow `LIMITS` in defaults.ts where design.md differs** (D-033: plan and contract win on data).
+
+**D-055 — Random mission is the `randomMission` flag.** The Random tile toggles it with an explanation. There's no per-pick difficulty, because the contract has no field for it.
+
+**D-056 — Design-only fields without a contract field are omitted** (Memory "tiles to remember", Tap "speed", the Steps permission row, which D-012 removed). A Volume stepper is exposed instead, since `volume` exists.
+
+**D-057 — The e2e harness simulates the camera and motion hardware** through `__rouseTest` hooks. CI exercises the real flows without hardware. The real camera, torch and sensors still need manual device checks.
+
+**D-058 — On web the status pill reads "Demo mode", never "Ready".** The web build never claims an alarm will ring (design principle 4).
+
+**D-059 — Import offers "Add to my alarms" (merge) next to "Replace".**
+
+**D-060 — New-alarm defaults are edited at `#/alarm/defaults`,** reusing the editor without time, repeat or label, and with QR disabled (a default can't carry a registered code).
+
+**D-061 — Registering a QR code counts as the successful test scan,** which satisfies D-029. The user must have scanned the code once with camera permission granted.
+
+**D-062 — On phones the time picker steppers stack vertically,** so 64 px targets fit at 412 px.
+
+**D-063 — "I'm up: turn it off" from the Snoozed screen** runs the missions on the snoozed episode and dismisses it (design §3.9). Native `dismiss()` must accept the snoozed state; this was routed to the native review.

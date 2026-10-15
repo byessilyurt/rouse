@@ -54,13 +54,17 @@ public final class RingService extends Service {
     private final Runnable callPoll = new Runnable() {
         @Override
         public void run() {
-            boolean now = isInCall();
-            if (now != inCall) {
-                inCall = now;
-                DiagLog.i("ring", inCall ? "call started: vibrate only" : "call ended: audio resumes");
-                if (inCall) player.pauseForCall();
-                else player.resumeAfterCall();
-                updateVibration();
+            try {
+                boolean now = isInCall();
+                if (now != inCall) {
+                    inCall = now;
+                    DiagLog.i("ring", inCall ? "call started: vibrate only" : "call ended: audio resumes");
+                    if (inCall) player.pauseForCall();
+                    else player.resumeAfterCall();
+                    updateVibration();
+                }
+            } catch (RuntimeException ex) {
+                DiagLog.e("ring", "call poll failed", ex);
             }
             handler.postDelayed(this, CALL_POLL_MS);
         }
@@ -100,7 +104,15 @@ public final class RingService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Episode e = RingEngine.get(this).snapshot();
         boolean ringing = e != null && e.isRinging();
-        Notification n = ringing ? Notifications.buildRing(this, e) : placeholderNotification();
+        Notification n;
+        try {
+            n = ringing ? Notifications.buildRing(this, e) : placeholderNotification();
+        } catch (RuntimeException ex) {
+            // Never let a notification problem skip startForeground (that would crash the process
+            // and the safety re-ring would hit the same crash every minute).
+            DiagLog.e("ring", "ring notification build failed; placeholder", ex);
+            n = placeholderNotification();
+        }
         // startForeground FIRST, before any other work (5 s rule).
         foreground = startAsForeground(n);
         if (!ringing) {
@@ -141,23 +153,50 @@ public final class RingService extends Service {
         boolean restartSameSession = episode != null && episode.sessionId.equals(e.sessionId) && aliveSession != null;
         episode = e;
         aliveSession = e.sessionId;
-        refreshWakeLock();
-        requestFocus();
-        volumeLock.lock(e.alarm.volume);
+        // Every auxiliary step is isolated: an exception in any of them must never prevent the
+        // player from starting (an uncaught exception here kills the process, and the safety
+        // re-ring would then crash the same way every minute → a silent alarm).
+        safely("preview", SoundPreview::stopActive); // a preview must not fight the ring (or poison VolumeLock)
+        safely("wakelock", this::refreshWakeLock);
+        safely("focus", this::requestFocus);
+        safely("volume", () -> volumeLock.lock(e.alarm.volume));
 
-        SoundLibrary.Source source = new SoundLibrary(this).resolve(e.alarm.soundKind, e.alarm.soundId);
+        SoundLibrary.Source source = null; // null → AlarmPlayer plays the backup tone
+        try {
+            source = new SoundLibrary(this).resolve(e.alarm.soundKind, e.alarm.soundId);
+        } catch (RuntimeException ex) {
+            DiagLog.e("ring", "sound resolve failed; backup tone", ex);
+        }
         // A safety re-ring always starts loud; so does a restart of an already-running ring.
         int ramp = Episode.SOURCE_SAFETY.equals(e.source) || restartSameSession ? 0 : e.alarm.volumeRampSec;
-        inCall = isInCall();
-        player.start(source, ramp, inCall);
+        try {
+            inCall = isInCall();
+        } catch (RuntimeException ex) {
+            inCall = false;
+        }
+        try {
+            player.start(source, ramp, inCall);
+        } catch (RuntimeException ex) {
+            DiagLog.e("ring", "player start failed", ex);
+        }
         silenced = e.silenced;
-        if (silenced) player.mute();
+        if (silenced) safely("mute", player::mute);
         vibrateEnabled = e.alarm.vibrate;
-        stopVibration();
-        updateVibration();
+        safely("vibration", () -> {
+            stopVibration();
+            updateVibration();
+        });
         handler.removeCallbacks(callPoll);
         handler.postDelayed(callPoll, CALL_POLL_MS);
         DiagLog.i("ring", "ringing source=" + e.source + " test=" + e.isTest + " fg=" + foreground);
+    }
+
+    private static void safely(String what, Runnable r) {
+        try {
+            r.run();
+        } catch (RuntimeException ex) {
+            DiagLog.e("ring", what + " failed", ex);
+        }
     }
 
     /** Silence lease from RingEngine (main thread). */
@@ -305,9 +344,10 @@ public final class RingService extends Service {
         handler.removeCallbacks(callPoll);
         if (episode != null && episode.sessionId.equals(aliveSession)) aliveSession = null;
         if (instance == this) instance = null;
-        player.stop();
-        stopVibration();
-        volumeLock.unlock();
+        // Each teardown step isolated so the wakelock and the user's volume are always released.
+        safely("player stop", player::stop);
+        safely("vibration stop", this::stopVibration);
+        safely("volume restore", volumeLock::unlock);
         abandonFocus();
         releaseWakeLock();
         try {

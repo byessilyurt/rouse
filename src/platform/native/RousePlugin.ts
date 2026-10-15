@@ -104,7 +104,8 @@ export interface RousePluginApi {
   /**
    * The WebView ring UI for `sessionId` is interactive: cancel the NATIVE_UI_READY_TIMEOUT_MS
    * fallback timer. If the native fallback is already on screen, leave it (either may dismiss).
-   * SESSION_MISMATCH if not the current ringing episode.
+   * Also accepted (no-op) while the episode is 'snoozed' (design §3.9 "I'm up — turn it off").
+   * SESSION_MISMATCH if not the current episode; NO_ACTIVE_RING in any other state.
    */
   missionUiReady(options: { sessionId: string }): Promise<void>;
 
@@ -113,6 +114,7 @@ export interface RousePluginApi {
    * min(leaseMs, MAX_SILENCE_LEASE_MS). Each call re-arms it. When it expires: resume at full
    * target gain (no ramp), set silenced=false, emit 'ringState'.
    * silenced=false: resume now. Persisted so a crash during silence resumes LOUD.
+   * While the episode is 'snoozed' nothing is audible, so this resolves as a harmless no-op.
    */
   setSilenced(options: { sessionId: string; silenced: boolean; leaseMs: number }): Promise<void>;
 
@@ -125,7 +127,9 @@ export interface RousePluginApi {
   snooze(options: { sessionId: string }): Promise<{ snoozeUntil: EpochMs }>;
 
   /**
-   * Mission(s) complete. Stop audio/vibration/FGS, cancel safety alarm, restore alarm volume,
+   * Mission(s) complete. Valid while 'ringing' or 'snoozed' (design §3.9 "I'm up — turn it off":
+   * missions solved during the snooze; the pending RC_SNOOZE is cancelled first).
+   * Stop audio/vibration/FGS, cancel safety alarm, restore alarm volume,
    * clear showWhenLocked. If alarm.wakeUpCheck.enabled and !isTest and wakeCheckReRings <
    * WAKE_CHECK_MAX_RERINGS: state='wake-check-wait', schedule RC_WAKE_CHECK at now + delayMin;
    * else end the episode. Log 'dismissed' (+ 'episode-ended'), emit 'ringState'.

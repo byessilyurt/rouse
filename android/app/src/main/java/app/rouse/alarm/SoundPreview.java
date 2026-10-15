@@ -11,6 +11,9 @@ import android.os.Looper;
  */
 final class SoundPreview {
 
+    /** The preview currently playing (main thread only), so a real ring can stop it first. */
+    private static SoundPreview active;
+
     private final Context context;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable autoStop = this::stop;
@@ -34,11 +37,19 @@ final class SoundPreview {
             }
         }
         player = new AlarmPlayer(context);
+        active = this;
         player.start(source, 0, false);
         handler.postDelayed(autoStop, RouseConstants.PREVIEW_MAX_MS);
     }
 
+    /** Stop any playing preview and restore its volume (RingService calls this before VolumeLock.lock). */
+    static void stopActive() {
+        SoundPreview p = active;
+        if (p != null) p.stop();
+    }
+
     void stop() {
+        if (active == this) active = null;
         handler.removeCallbacks(autoStop);
         if (player != null) {
             player.stop();

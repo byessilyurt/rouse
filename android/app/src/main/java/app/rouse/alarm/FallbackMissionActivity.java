@@ -86,6 +86,12 @@ public class FallbackMissionActivity extends AppCompatActivity implements RingEn
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        if (!done) RingEngine.get(this).ensureRingServiceFromForeground();
+    }
+
+    @Override
     protected void onStop() {
         RingEngine.get(this).removeUiListener(this);
         super.onStop();

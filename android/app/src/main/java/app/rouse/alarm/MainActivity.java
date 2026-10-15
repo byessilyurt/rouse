@@ -51,6 +51,13 @@ public class MainActivity extends BridgeActivity implements RingEngine.UiListene
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        // Visible now: a refused background FGS start (D-051) can be retried with certainty here.
+        if (ringMode) RingEngine.get(this).ensureRingServiceFromForeground();
+    }
+
+    @Override
     public void onStop() {
         RingEngine.get(this).removeUiListener(this);
         super.onStop();

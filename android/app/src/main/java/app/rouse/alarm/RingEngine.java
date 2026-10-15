@@ -52,6 +52,8 @@ public final class RingEngine {
 
     private static final long LEASE_TOLERANCE_MS = 250L;
     private static final long CALL_TIMEOUT_S = 10L;
+    /** lastHandledFireAt may legitimately be slightly ahead of now (early delivery, D-046). */
+    private static final long CLOCK_BACK_TOLERANCE_MS = 60_000L;
     private static volatile RingEngine instance;
 
     private final Context app;
@@ -335,6 +337,11 @@ public final class RingEngine {
             DiagLog.e("engine", "stopService failed", ex);
         }
         Notifications.cancel(app, RouseConstants.NOTIF_RING);
+        // If no service instance is running in this process (FGS start was refused, or the process
+        // was restarted mid-ring), nobody else will put the user's alarm volume back.
+        main.post(() -> {
+            if (RingService.current() == null) VolumeLock.restoreSaved(app);
+        });
     }
 
     private void applySilenceToService(final boolean silenced) {
@@ -486,7 +493,9 @@ public final class RingEngine {
     }
 
     public void missionUiReady(String sessionId) throws RouseError {
-        Episode e = requireEpisode(sessionId, Episode.STATE_RINGING);
+        Episode e = requireEpisode(sessionId, Episode.STATE_RINGING, Episode.STATE_SNOOZED);
+        // Snoozed ("I'm up — turn it off", design §3.9): nothing rings, no readiness timer to cancel.
+        if (!e.isRinging()) return;
         memUiReadySession = sessionId;
         handler.removeCallbacks(readinessTimeout);
         if (!e.uiReady) {
@@ -496,7 +505,9 @@ public final class RingEngine {
     }
 
     public void setSilenced(String sessionId, boolean silenced, long leaseMs) throws RouseError {
-        Episode e = requireEpisode(sessionId, Episode.STATE_RINGING);
+        Episode e = requireEpisode(sessionId, Episode.STATE_RINGING, Episode.STATE_SNOOZED);
+        // Snoozed: nothing is audible, so there is nothing to silence (harmless no-op, design §3.9).
+        if (!e.isRinging()) return;
         boolean was = e.silenced;
         if (silenced && leaseMs > 0) {
             long lease = Math.min(leaseMs, RouseConstants.MAX_SILENCE_LEASE_MS);
@@ -547,10 +558,18 @@ public final class RingEngine {
         return e.snoozeUntil;
     }
 
-    /** via ∈ mission | fallback | no-mission (JS) or native-fallback (FallbackMissionActivity). */
+    /**
+     * via ∈ mission | fallback | no-mission (JS) or native-fallback (FallbackMissionActivity).
+     * Valid while 'ringing' or 'snoozed' (design §3.9 "I'm up — turn it off": the missions are
+     * solved during the snooze; the pending RC_SNOOZE is cancelled and the dismiss proceeds normally).
+     */
     public Long dismiss(String sessionId, String via) throws RouseError {
-        Episode e = requireEpisode(sessionId, Episode.STATE_RINGING);
+        Episode e = requireEpisode(sessionId, Episode.STATE_RINGING, Episode.STATE_SNOOZED);
         long now = now();
+        if (Episode.STATE_SNOOZED.equals(e.state)) {
+            scheduler.cancel(RouseConstants.RC_SNOOZE);
+            e.snoozeUntil = null;
+        }
         stopRingService();
         scheduler.cancel(RouseConstants.RC_SAFETY);
         handler.removeCallbacks(readinessTimeout);
@@ -622,6 +641,21 @@ public final class RingEngine {
             saveEpisode(e);
             handler.removeCallbacks(readinessTimeout);
             handler.postDelayed(readinessTimeout, RouseConstants.NATIVE_UI_READY_TIMEOUT_MS);
+        });
+    }
+
+    /**
+     * A ring activity (MainActivity / FallbackMissionActivity) is RESUMED, i.e. visibly in the
+     * foreground: if the episode is ringing but the service is not running (e.g. the FGS start from
+     * the receiver was refused, D-051, or ringUiLaunched ran while the activity was not yet
+     * visible), start it now, when an FGS start is certainly allowed.
+     */
+    public void ensureRingServiceFromForeground() {
+        post(() -> {
+            Episode e = episodes.get();
+            if (e == null || !e.isRinging() || RingService.isAlive(e.sessionId)) return;
+            DiagLog.w("engine", "ringing but service not alive; starting from foreground activity");
+            startRingService(e);
         });
     }
 
@@ -803,15 +837,19 @@ public final class RingEngine {
         e.isTest = false;
         memUiReadySession = null;
         saveEpisode(e); // persisted BEFORE anything is audible
-        scheduler.schedule(RouseConstants.RC_SAFETY, now + RouseConstants.SAFETY_RERING_INTERVAL_MS);
-        logEvent(e, "ring-started", e.alarmId, fields("source", source, "scheduledFor", fireAt));
-        for (int i = 1; i < due.size(); i++) {
-            logEvent(e, "merged", due.get(i).id, fields("ringingAlarmId", primary.id));
+        try {
+            scheduler.schedule(RouseConstants.RC_SAFETY, now + RouseConstants.SAFETY_RERING_INTERVAL_MS);
+            logEvent(e, "ring-started", e.alarmId, fields("source", source, "scheduledFor", fireAt));
+            for (int i = 1; i < due.size(); i++) {
+                logEvent(e, "merged", due.get(i).id, fields("ringingAlarmId", primary.id));
+            }
+            for (AlarmSpec a : due) consumeOneOff(e, a);
+            rescheduleQuietly();
+        } finally {
+            // Whatever failed above (logged by guarded()), the persisted episode MUST become audible now.
+            startRingService(e);
+            emitRing(e);
         }
-        for (AlarmSpec a : due) consumeOneOff(e, a);
-        rescheduleQuietly();
-        startRingService(e);
-        emitRing(e);
     }
 
     /** A one-off alarm that fired is disabled in the mirror; JS disables/deletes it on the log event. */
@@ -855,12 +893,15 @@ public final class RingEngine {
         }
         saveEpisode(e);
         handler.removeCallbacks(silenceExpiry);
-        scheduler.schedule(RouseConstants.RC_SAFETY, now + RouseConstants.SAFETY_RERING_INTERVAL_MS);
-        Notifications.cancel(app, RouseConstants.NOTIF_STATUS);
-        Notifications.cancel(app, RouseConstants.NOTIF_WAKE_CHECK);
-        logEvent(e, "ring-started", e.alarmId, fields("source", source, "scheduledFor", e.scheduledFor));
-        startRingService(e);
-        emitRing(e);
+        try {
+            scheduler.schedule(RouseConstants.RC_SAFETY, now + RouseConstants.SAFETY_RERING_INTERVAL_MS);
+            Notifications.cancel(app, RouseConstants.NOTIF_STATUS);
+            Notifications.cancel(app, RouseConstants.NOTIF_WAKE_CHECK);
+            logEvent(e, "ring-started", e.alarmId, fields("source", source, "scheduledFor", e.scheduledFor));
+        } finally {
+            startRingService(e);
+            emitRing(e);
+        }
     }
 
     private void onSnoozeEnd() {
@@ -946,9 +987,12 @@ public final class RingEngine {
         e.isTest = true;
         memUiReadySession = null;
         saveEpisode(e);
-        scheduler.schedule(RouseConstants.RC_SAFETY, now + RouseConstants.SAFETY_RERING_INTERVAL_MS);
-        startRingService(e);
-        emitRing(e);
+        try {
+            scheduler.schedule(RouseConstants.RC_SAFETY, now + RouseConstants.SAFETY_RERING_INTERVAL_MS);
+        } finally {
+            startRingService(e);
+            emitRing(e);
+        }
     }
 
     /** RC_DEFERRED_START: whatever reconcile found overdue, now from an alarm-clock context. */
@@ -994,6 +1038,14 @@ public final class RingEngine {
         DiagLog.i("reconcile", reason);
         Notifications.ensureChannels(app);
         long now = now();
+        // D-046's lastHandledFireAt is an absolute instant. If the wall clock moved BACKWARDS past it
+        // (manual time change, bad network time corrected), keeping it would make the next real
+        // occurrences look "already handled" (dropped in handleDue) and skip them in rescheduleMain.
+        long lastHandled = mirror.lastHandledFireAt();
+        if (lastHandled > now + CLOCK_BACK_TOLERANCE_MS) {
+            DiagLog.w("reconcile", "clock moved back; lastHandledFireAt reset");
+            mirror.setLastHandledFireAt(now);
+        }
         boolean needDeferred = false;
         Episode e = episodes.get();
         if (e != null) {
