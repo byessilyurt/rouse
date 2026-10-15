@@ -98,6 +98,20 @@ export interface RousePluginApi {
    */
   testAlarm(options: { alarm: Alarm; delaySeconds: number }): Promise<{ fireAt: EpochMs }>;
 
+  /**
+   * The test ring scheduled by testAlarm that has not fired yet: { fireAt } or { fireAt: null }.
+   * A pending test older than MISSED_GRACE_MS reads as none.
+   */
+  getPendingTest(): Promise<{ fireAt: EpochMs | null }>;
+
+  /**
+   * Cancel the pending test (cancel RC_TEST, clear the stored pending test). If the current episode
+   * isTest (ringing or snoozed), end it exactly like dismiss(via 'no-mission'): stop audio/vibration/FGS,
+   * cancel safety, restore volume, NO log events, emit 'ringState'(null). A real episode is never touched.
+   * Resolves even when nothing was pending.
+   */
+  cancelTest(): Promise<void>;
+
   /** Current episode in any EpisodeState, or null. */
   getActiveRing(): Promise<{ ring: ActiveRing | null }>;
 

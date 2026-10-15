@@ -14,6 +14,8 @@ const mock = vi.hoisted(() => {
     getHealth: fn(),
     requestFix: fn(),
     testAlarm: fn(),
+    getPendingTest: fn(),
+    cancelTest: fn(),
     getActiveRing: fn(),
     missionUiReady: fn(),
     setSilenced: fn(),
@@ -136,6 +138,61 @@ describe('NativeAlarmBackend', () => {
     mock.plugin.snooze.mockResolvedValue({ snoozeUntil: 123 });
     expect(await b.snooze('s1')).toEqual({ snoozeUntil: 123 });
     expect(mock.plugin.snooze).toHaveBeenCalledWith({ sessionId: 's1' });
+  });
+
+  it('getPendingTest unwraps { fireAt }, null when nothing is pending; cancelTest calls the plugin', async () => {
+    const b = createNativeAlarmBackend();
+    mock.plugin.getPendingTest.mockResolvedValue({ fireAt: 4242 });
+    expect(await b.getPendingTest()).toEqual({ fireAt: 4242 });
+    mock.plugin.getPendingTest.mockResolvedValue({ fireAt: null });
+    expect(await b.getPendingTest()).toBeNull();
+    mock.plugin.cancelTest.mockResolvedValue(undefined);
+    await expect(b.cancelTest()).resolves.toBeUndefined();
+    expect(mock.plugin.cancelTest).toHaveBeenCalledTimes(1);
+    mock.plugin.cancelTest.mockRejectedValue(Object.assign(new Error('io'), { code: 'IO_ERROR' }));
+    await expect(b.cancelTest()).rejects.toMatchObject({ code: 'IO_ERROR' });
+  });
+
+  it('getDiagnostics combines health, schedule, episode and the native log, without alarm labels', async () => {
+    const b = createNativeAlarmBackend();
+    const labelled: ActiveRing = { ...ring, alarm: { ...alarm, label: 'My secret label' } };
+    mock.plugin.getHealth.mockResolvedValue({
+      platform: 'android',
+      sdkInt: 35,
+      manufacturer: 'google',
+      checks: [{ id: 'exactAlarm', state: 'ok', severity: 'critical', fix: 'none', detail: 'Allowed' }],
+      checkedAt: 1_760_000_000_000,
+    });
+    mock.plugin.getNextFire.mockResolvedValue({ next: { alarmId: 'a1', alarmIds: ['a1', 'a2'], fireAt: 1_760_000_100_000 } });
+    mock.plugin.getPendingTest.mockResolvedValue({ fireAt: 1_760_000_200_000 });
+    mock.plugin.getActiveRing.mockResolvedValue({ ring: labelled });
+    mock.plugin.getDiagnostics.mockResolvedValue({ lines: ['2026-10-15T05:00:00.000Z I ring: ringing source=scheduled test=false fg=true'] });
+    const text = await b.getDiagnostics();
+    expect(text).toMatch(/^Rouse diagnostics · android · /);
+    expect(text).toContain('sdk: 35 · maker: google');
+    expect(text).toContain('exactAlarm: ok (critical)');
+    expect(text).toContain(`next fire: ${new Date(1_760_000_100_000).toISOString()} (2 alarms)`);
+    expect(text).toContain(`pending test: ${new Date(1_760_000_200_000).toISOString()}`);
+    expect(text).toContain('episode: ringing · source scheduled · test false');
+    expect(text).toContain('[log] last 1 lines');
+    expect(text).toContain('I ring: ringing source=scheduled');
+    expect(text).not.toContain('My secret label');
+    expect(text).not.toContain('[unavailable]');
+  });
+
+  it('getDiagnostics still reports when some sources fail', async () => {
+    const b = createNativeAlarmBackend();
+    mock.plugin.getHealth.mockRejectedValue(new Error('nope'));
+    mock.plugin.getNextFire.mockResolvedValue({ next: null });
+    mock.plugin.getPendingTest.mockResolvedValue({ fireAt: null });
+    mock.plugin.getActiveRing.mockResolvedValue({ ring: null });
+    mock.plugin.getDiagnostics.mockRejectedValue(new Error('nope'));
+    const text = await b.getDiagnostics();
+    expect(text).toContain('[health]\nunavailable');
+    expect(text).toContain('next fire: none');
+    expect(text).toContain('pending test: none');
+    expect(text).toContain('episode: none');
+    expect(text).toContain('[unavailable] health, log');
   });
 
   it('maps ring-session calls to plugin arguments', async () => {

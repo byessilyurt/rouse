@@ -13,6 +13,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.os.VibrationAttributes;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
@@ -25,7 +26,8 @@ import app.rouse.alarm.model.Episode;
  * Foreground service (type mediaPlayback, D-020) that makes the noise: ring notification with a
  * full-screen intent (no actions), AlarmPlayer on USAGE_ALARM, VolumeLock, vibration, a partial
  * wakelock and audio focus. During a phone call it only vibrates and starts the audio when the
- * call ends. Started only by RingEngine from alarm-clock receivers or the foreground activity.
+ * call ends, or when the call audio mode has lasted CALL_MODE_CAP_MS (CallPolicy, D-049). Started
+ * only by RingEngine from alarm-clock receivers or the foreground activity.
  */
 public final class RingService extends Service {
 
@@ -49,6 +51,8 @@ public final class RingService extends Service {
     private boolean vibrateEnabled;
     private boolean vibrating;
     private boolean inCall;
+    /** elapsedRealtime when the audio mode was first seen as a call (CallPolicy.NONE if it is not). */
+    private long callModeSince = CallPolicy.NONE;
     private boolean foreground;
 
     private final Runnable callPoll = new Runnable() {
@@ -58,7 +62,15 @@ public final class RingService extends Service {
                 boolean now = isInCall();
                 if (now != inCall) {
                     inCall = now;
-                    DiagLog.i("ring", inCall ? "call started: vibrate only" : "call ended: audio resumes");
+                    // callModeSince is NONE once the mode left call; still set while !inCall means the cap was hit.
+                    DiagLog.i(
+                        "ring",
+                        inCall
+                            ? "call started: vibrate only"
+                            : callModeSince != CallPolicy.NONE
+                                ? "call mode > " + RouseConstants.CALL_MODE_CAP_MS + " ms (stuck VoIP?): audio starts anyway"
+                                : "call ended: audio resumes"
+                    );
                     if (inCall) player.pauseForCall();
                     else player.resumeAfterCall();
                     updateVibration();
@@ -279,10 +291,21 @@ public final class RingService extends Service {
         }
     }
 
-    private boolean isInCall() {
+    private boolean isCallMode() {
         if (audio == null) return false;
         int mode = audio.getMode();
         return mode == AudioManager.MODE_IN_CALL || mode == AudioManager.MODE_IN_COMMUNICATION;
+    }
+
+    /**
+     * True while a call holds the alarm vibrate-only. Capped (D-049): a call/VoIP mode that has lasted
+     * longer than CALL_MODE_CAP_MS while ringing no longer counts, so a stuck mode can't silence the alarm forever.
+     */
+    private boolean isInCall() {
+        boolean mode = isCallMode();
+        long now = SystemClock.elapsedRealtime();
+        callModeSince = CallPolicy.track(mode, callModeSince, now);
+        return CallPolicy.holdsAudio(mode, callModeSince, now, RouseConstants.CALL_MODE_CAP_MS);
     }
 
     private void updateVibration() {

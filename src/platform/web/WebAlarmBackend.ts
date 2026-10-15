@@ -37,6 +37,7 @@ import {
   WAKE_CHECK_MAX_RERINGS,
 } from '../../core/defaults';
 import { bedtimeReminderAt, nextFire, nextOccurrence } from '../../core/schedule';
+import { formatDiagnostics } from '../diagnostics';
 import { ToneVoice, audioAvailable, audioBlocked, unlockAudio } from './audio';
 
 export interface WebAlarmBackendOptions {
@@ -696,6 +697,26 @@ export class WebAlarmBackend implements AlarmBackend {
     return { fireAt };
   }
 
+  async getPendingTest(): Promise<{ fireAt: EpochMs } | null> {
+    this.check(); // a test that is due has fired by now
+    const t = this.state.test;
+    return t ? { fireAt: t.fireAt } : null;
+  }
+
+  async cancelTest(): Promise<void> {
+    const s = this.state;
+    s.test = null;
+    const ep = s.episode;
+    if (ep?.isTest) {
+      // Same outcome as dismissing a test ring: no log events, no stats, no wake check (D-030, D-053).
+      this.stopRingOutput();
+      s.episode = null;
+      this.emit({ type: 'ring-state', ring: null });
+    }
+    this.persist();
+    this.arm();
+  }
+
   // ── log ───────────────────────────────────────────────────────────────────
 
   async getLog(afterSeq: number): Promise<AlarmLogEvent[]> {
@@ -789,6 +810,34 @@ export class WebAlarmBackend implements AlarmBackend {
       }
     }
     return 'unsupported';
+  }
+
+  // ── diagnostics ───────────────────────────────────────────────────────────
+
+  async getDiagnostics(): Promise<string> {
+    this.check();
+    const s = this.state;
+    const unavailable: string[] = [];
+    let health: HealthStatus | null = null;
+    try {
+      health = await this.getHealth();
+    } catch {
+      unavailable.push('health');
+    }
+    const facts = [`user agent: ${typeof navigator !== 'undefined' ? navigator.userAgent : 'n/a'}`, `alarms mirrored: ${s.alarms.length}`];
+    // Log events carry ids, never labels; list the most recent kinds only.
+    const recent = s.log.slice(-20).map((e) => `${new Date(e.at).toISOString()} #${e.seq} ${e.type}`);
+    return formatDiagnostics({
+      platform: 'web',
+      generatedAt: this.now(),
+      health,
+      next: s.scheduled,
+      ring: this.publicRing(s.episode),
+      pendingTestAt: s.test?.fireAt ?? null,
+      facts,
+      lines: recent,
+      unavailable,
+    });
   }
 
   // ── sounds ────────────────────────────────────────────────────────────────

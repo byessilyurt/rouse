@@ -11,9 +11,10 @@ import { DayChips, Select, Stepper, TextField, TimePicker, Toggle } from '../com
 import { Banner, ListRow, Screen, StatusPill } from '../components/layout';
 import { Dialog, Sheet } from '../components/overlays';
 import { toast } from '../components/feedback';
-import { useApp, useService, useUse24h } from '../context';
-import { dayDiff, formatDayShort, formatIn, formatTime, missionName, missionSummary, repeatSummary } from '../format';
+import { useApp, useNow, useService, useUse24h } from '../context';
+import { dayDiff, formatClockCountdown, formatDayShort, formatIn, formatTime, missionName, missionSummary, repeatSummary } from '../format';
 import { Icon, MISSION_ICON } from '../icons';
+import { usePendingTest } from '../pendingTest';
 import { goBack, navigate } from '../router';
 import { clearDraft, getDraft, isDirty, startDraft, subscribeDraft, updateDraftAlarm } from '../draft';
 import { setNotice } from '../notices';
@@ -463,9 +464,7 @@ export function AlarmEditor({ id }: { id: string }) {
 
       {!defaultsMode && (
         <EditorSection id="test" title="Test">
-          <Button variant="secondary" block icon="play" onClick={testAlarm}>
-            Test this alarm
-          </Button>
+          <TestSection onTest={testAlarm} />
         </EditorSection>
       )}
 
@@ -572,6 +571,37 @@ function RingsIn({ alarm }: { alarm: Alarm }) {
     <p class="center muted" aria-live="polite" data-testid="rings-in">
       {text}
     </p>
+  );
+}
+
+/** "Test this alarm", or, while a test is pending (also one started from Reliability), its countdown and a Cancel button. */
+function TestSection({ onTest }: { onTest: () => Promise<void> }) {
+  const t = useNow(1000);
+  const pending = usePendingTest(t);
+  if (pending.fireAt == null) {
+    return (
+      <Button variant="secondary" block icon="play" onClick={onTest}>
+        Test this alarm
+      </Button>
+    );
+  }
+  return (
+    <>
+      <Button variant="secondary" block icon="play" ariaDisabled>
+        Test alarm in {formatClockCountdown(pending.fireAt - t)}
+      </Button>
+      <Button
+        variant="secondary"
+        block
+        icon="x"
+        onClick={async () => {
+          await pending.cancel();
+          toast('Test cancelled');
+        }}
+      >
+        Cancel test
+      </Button>
+    </>
   );
 }
 

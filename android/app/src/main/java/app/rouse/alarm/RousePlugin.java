@@ -178,6 +178,19 @@ public class RousePlugin extends Plugin implements RingEngine.EventSink {
     }
 
     @PluginMethod
+    public void getPendingTest(PluginCall call) {
+        run(call, () -> engine.getPendingTest());
+    }
+
+    @PluginMethod
+    public void cancelTest(PluginCall call) {
+        run(call, () -> {
+            engine.cancelTest();
+            return null;
+        });
+    }
+
+    @PluginMethod
     public void getActiveRing(PluginCall call) {
         run(call, () -> engine.getActiveRing());
     }

@@ -118,6 +118,9 @@ export class FakeBackend implements AlarmBackend {
   getHealth = vi.fn(async () => ({ platform: 'web' as const, sdkInt: null, manufacturer: null, checks: [], checkedAt: 0 }));
   requestFix = vi.fn(async () => 'unsupported' as const);
   testAlarm = vi.fn(async () => ({ fireAt: 0 }));
+  getPendingTest = vi.fn(async () => null);
+  cancelTest = vi.fn(async () => {});
+  getDiagnostics = vi.fn(async () => 'diagnostics');
   getActiveRing = vi.fn(async () => null);
   missionUiReady = vi.fn(async () => {});
   setSilenced = vi.fn(async () => {});

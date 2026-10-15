@@ -1,13 +1,16 @@
 /** Reliability (design.md §3.12). */
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { HealthCheckId } from '../../platform/AlarmBackend';
 import { createAlarm } from '../../core/defaults';
 import { Button } from '../components/Button';
 import { Banner, Card, CheckRow, Screen, type CheckStatus } from '../components/layout';
+import { toast } from '../components/feedback';
+import { copyText } from '../clipboard';
 import { emitHealthChanged, useApp, useNow, useService } from '../context';
 import { formatClockCountdown, formatDayMonth } from '../format';
 import { checkStatus, findCheck, useHealth } from '../health';
 import { Icon } from '../icons';
+import { usePendingTest } from '../pendingTest';
 import { goBack } from '../router';
 import { readUiPrefs, writeUiPrefs } from '../uiPrefs';
 
@@ -36,11 +39,14 @@ const ROWS: RowSpec[] = [
 ];
 
 export function HealthScreen() {
-  const { backend, now } = useApp();
+  const { backend, now, appVersion } = useApp();
   const service = useService();
   const { health, refreshing, refresh } = useHealth();
   const t = useNow(1000);
   const [prefs, setPrefs] = useState(readUiPrefs);
+  const pendingTest = usePendingTest(t);
+  const [diagnostics, setDiagnostics] = useState<string | null>(null);
+  const diagnosticsRef = useRef<HTMLTextAreaElement>(null);
   const web = backend.kind === 'web';
   let mismatches = 0;
   try {
@@ -48,6 +54,10 @@ export function HealthScreen() {
   } catch {
     mismatches = 0;
   }
+
+  useEffect(() => {
+    if (diagnostics) diagnosticsRef.current?.select();
+  }, [diagnostics]);
 
   // A scheduled health test that should have rung by now but never did.
   useEffect(() => {
@@ -66,7 +76,7 @@ export function HealthScreen() {
     emitHealthChanged();
   };
 
-  const testPending = prefs.pendingTestAt != null && prefs.pendingTestAt > t;
+  const testPending = pendingTest.fireAt != null;
   const startTest = async () => {
     const s = service.getSettings();
     const alarm = createAlarm({
@@ -81,6 +91,31 @@ export function HealthScreen() {
     });
     const { fireAt } = await backend.testAlarm({ ...alarm, label: 'Test alarm' }, 60);
     setPrefs(writeUiPrefs({ pendingTestAt: fireAt }));
+    pendingTest.set(fireAt);
+  };
+  const cancelTest = async () => {
+    await pendingTest.cancel();
+    setPrefs(readUiPrefs());
+    toast('Test cancelled');
+  };
+
+  // Plain-text summary for bug reports: no alarm names or other personal data (see backend.getDiagnostics).
+  const copyDiagnostics = async () => {
+    let text: string;
+    try {
+      text = `Rouse ${appVersion}\n${await backend.getDiagnostics()}`;
+    } catch {
+      toast("Couldn't collect diagnostics");
+      return;
+    }
+    if (await copyText(text)) {
+      setDiagnostics(null);
+      toast('Diagnostics copied');
+    } else {
+      // Clipboard blocked: show the text, selected, so it can be copied by hand.
+      setDiagnostics(text);
+      toast('Select the text below and copy it');
+    }
   };
 
   const lastOk = prefs.lastTestOkAt;
@@ -166,10 +201,32 @@ export function HealthScreen() {
       </ul>
       <div class="stack-sm">
         <Button variant="primary" block icon="play" ariaDisabled={testPending} onClick={() => !testPending && void startTest()}>
-          {testPending ? `Test rings in ${formatClockCountdown((prefs.pendingTestAt ?? t) - t)}` : 'Test alarm in 1 minute'}
+          {testPending ? `Test alarm in ${formatClockCountdown((pendingTest.fireAt ?? t) - t)}` : 'Test alarm in 1 minute'}
         </Button>
+        {testPending && (
+          <Button variant="secondary" block icon="x" onClick={() => void cancelTest()}>
+            Cancel test
+          </Button>
+        )}
         <p class="muted">Lock your phone now. If it doesn't ring, the checks above should show why.</p>
         <p class="muted small">If you Force stop Rouse in Android settings, Android cancels its alarms until you open Rouse again.</p>
+      </div>
+      <div class="stack-sm">
+        <Button variant="secondary" block onClick={() => void copyDiagnostics()}>
+          Copy diagnostics
+        </Button>
+        <p class="muted small">A technical summary for bug reports. It has no alarm names or other personal data.</p>
+        {diagnostics && (
+          <textarea
+            ref={diagnosticsRef}
+            class="textarea"
+            readOnly
+            rows={8}
+            aria-label="Diagnostics"
+            data-testid="diagnostics-text"
+            value={diagnostics}
+          />
+        )}
       </div>
     </Screen>
   );

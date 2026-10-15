@@ -165,6 +165,96 @@ describe('WebAlarmBackend', () => {
     expect((await backend.getActiveRing())?.sessionId).toBe(real.sessionId);
   });
 
+  it('getPendingTest reports a scheduled test until it fires; cancelTest drops it before it rings', async () => {
+    expect(await backend.getPendingTest()).toBeNull();
+    const { fireAt } = await backend.testAlarm(alarm({ id: 'test' }), 60);
+    expect(await backend.getPendingTest()).toEqual({ fireAt });
+    expect(storage.getItem(WEB_BACKEND_KEY)).toContain('"test"');
+
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(await backend.getPendingTest()).toEqual({ fireAt }); // still pending halfway
+    await backend.cancelTest();
+    expect(await backend.getPendingTest()).toBeNull();
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(await backend.getActiveRing()).toBeNull(); // never rang
+    expect(await backend.getLog(0)).toEqual([]);
+
+    // The cancelled test is gone from persisted state too.
+    backend.dispose();
+    backend = await make();
+    expect(await backend.getPendingTest()).toBeNull();
+  });
+
+  it('a fired test is no longer pending', async () => {
+    await backend.testAlarm(alarm({ id: 'test' }), 5);
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(await backend.getPendingTest()).toBeNull();
+    expect(await backend.getActiveRing()).toMatchObject({ isTest: true, state: 'ringing' });
+  });
+
+  it('cancelTest ends a ringing test cleanly: no stats, no log, ring-state(null), audio stopped', async () => {
+    const hooked = await make({ testHooks: true });
+    try {
+      await hooked.testAlarm(alarm({ id: 'test' }), 1);
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(window.__rouseTest!.inspect()).toMatchObject({ ring: { isTest: true }, audio: 'playing' });
+      events = [];
+      await hooked.cancelTest();
+      await vi.advanceTimersByTimeAsync(10);
+      expect(await hooked.getActiveRing()).toBeNull();
+      expect(window.__rouseTest!.inspect().audio).toBe('stopped');
+      expect(await hooked.getLog(0)).toEqual([]);
+      expect(events).toContainEqual({ type: 'ring-state', ring: null });
+    } finally {
+      hooked.dispose();
+    }
+  });
+
+  it('cancelTest ends a snoozed test ring', async () => {
+    await backend.testAlarm(alarm({ id: 'test', snooze: { enabled: true, intervalMin: 5, maxCount: 3, requireMission: false } }), 1);
+    await vi.advanceTimersByTimeAsync(1_000);
+    const t = (await backend.getActiveRing())!;
+    await backend.snooze(t.sessionId);
+    expect(await backend.getActiveRing()).toMatchObject({ state: 'snoozed', isTest: true });
+    await backend.cancelTest();
+    expect(await backend.getActiveRing()).toBeNull();
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+    expect(await backend.getActiveRing()).toBeNull(); // the snooze timer is gone with the episode
+  });
+
+  it('cancelTest never touches a real ring and resolves when nothing is pending', async () => {
+    await backend.cancelTest(); // nothing to cancel
+    await backend.sync([alarm()], defaultSettings());
+    await vi.advanceTimersByTimeAsync(30 * 60_000);
+    const real = (await backend.getActiveRing())!;
+    expect(real.isTest).toBe(false);
+    await backend.testAlarm(alarm({ id: 'test' }), 30);
+    await backend.cancelTest();
+    expect(await backend.getPendingTest()).toBeNull();
+    expect(await backend.getActiveRing()).toMatchObject({ sessionId: real.sessionId, state: 'ringing' });
+  });
+
+  it('getDiagnostics summarises state without alarm labels', async () => {
+    await backend.sync([alarm({ label: 'Secret dentist appointment' })], defaultSettings());
+    const { fireAt } = await backend.testAlarm(alarm({ id: 'test', label: 'Private test label' }), 60);
+    await vi.advanceTimersByTimeAsync(30 * 60_000); // the 06:30 alarm rings
+    const text = await backend.getDiagnostics();
+    expect(text).toMatch(/^Rouse diagnostics · web · /);
+    expect(text).toContain('[health]');
+    expect(text).toContain('lockedDevice: unsupported (critical)');
+    expect(text).toContain('[scheduled]');
+    expect(text).toContain('episode: ringing · source scheduled · test false');
+    expect(text).toContain('alarms mirrored: 1');
+    expect(text).toMatch(/#\d+ ring-started/);
+    expect(text).not.toContain('Secret dentist appointment');
+    expect(text).not.toContain('Private test label');
+    expect(fireAt).toBeLessThan(Date.now()); // the test did fire, so no pending line
+    expect(text).toContain('pending test: none');
+
+    const t2 = await backend.testAlarm(alarm({ id: 'test2' }), 120);
+    expect(await backend.getDiagnostics()).toContain(`pending test: ${new Date(t2.fireAt).toISOString()}`);
+  });
+
   it('an alarm firing during a snooze supersedes it; one firing while ringing is merged', async () => {
     const a = alarm({ id: 'a', snooze: { enabled: true, intervalMin: 15, maxCount: 3, requireMission: false } });
     const b = alarm({ id: 'b', minute: 33 });
