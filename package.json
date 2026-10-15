@@ -1,0 +1,34 @@
+{
+  "name": "rouse",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Rouse — a free, open-source mission alarm clock. No ads, no paywall, no account.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "check": "npm run typecheck && npm run test && npm run build && npm run e2e",
+    "cap:sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "jsqr": "^1.4.0",
+    "preact": "^11.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "@playwright/test": "^1.56.1",
+    "@preact/preset-vite": "^2.10.6",
+    "jsdom": "^29.1.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.4"
+  }
+}
