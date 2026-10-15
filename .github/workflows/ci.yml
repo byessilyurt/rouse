@@ -47,7 +47,8 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: android-actions/setup-android@v3
+      - name: Use the runner's preinstalled Android SDK
+        run: echo "ANDROID_HOME=${ANDROID_HOME:-/usr/local/lib/android/sdk}" >> "$GITHUB_ENV"
       - run: npm ci
       - run: npm run build
       - run: npx cap sync android

@@ -30,3 +30,27 @@ Decision: the UI talks to an `AlarmBackend` interface. `NativeAlarmBackend` uses
 **D-005 — Playwright pinned to the container's Chromium**
 Context: Chromium 1194 is pre-installed at /opt/pw-browsers, and downloads are disabled.
 Decision: pin `@playwright/test` to the version matching that browser build (1.56.x) so the e2e suite runs here without downloads.
+
+**D-006 — CI uses the runner's preinstalled Android SDK**
+Context: `android-actions/setup-android@v3` failed on the GitHub runner while installing the obsolete `tools` package. The web CI job passed on the first run.
+Decision: drop the action and use the SDK that `ubuntu-latest` already ships (`ANDROID_HOME`). One fewer third-party action in the trust chain.
+
+**D-007 — Scope for v1 follows the analysis P0 list, plus selected P1 items**
+Context: `docs/analysis.md` §6.
+Decision:
+- **In v1, all free:**
+  - P0 items 1–11.
+  - From P1: re-ring after kill/reboot, local statistics, quick nap, bedtime reminder.
+  - Squat mission, labelled honestly as cheatable.
+- **Deferred:**
+  - Photo mission. On-device matching is unreliable in low light, and a false "no match" traps a user (pain #7).
+  - NFC.
+  - Widget.
+  - TTS reminders.
+  - Weather briefing. It would need the INTERNET permission, which conflicts with D-001.
+  - Sleep sounds and sleep tracking.
+- **Rejected:** blocking power-off or uninstall. It needs Accessibility or Device Admin abuse (Play policy risk) and can be bypassed anyway. Re-ring on boot and the wake-up check give the same commitment honestly.
+
+**D-008 — Native owns ringing; the WebView only renders missions**
+Context: analysis §7.6. A WebView cold start takes 1–3 s and can crash.
+Decision: the Java side schedules alarms, starts the foreground service, plays audio on USAGE_ALARM with a bundled backup tone, vibrates, posts the full-screen notification, and schedules a re-ring safety alarm before it starts ringing. Native storage (device-protected SharedPreferences) holds a JSON mirror of the alarms so boot rescheduling never needs JS. The mission UI runs in the WebView. If the WebView doesn't report "mission UI ready" within 10 s, the native side shows a native math fallback, so the user is never stuck.
