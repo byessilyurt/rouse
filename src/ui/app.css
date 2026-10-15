@@ -192,21 +192,21 @@ button.list-row, a.list-row { cursor: pointer; }
 .stepper.ring .stepper-row { flex-direction: column; }
 .stepper.ring .stepper-btn { width: 64px; height: 64px; }
 .stepper.ring .stepper-value {
-  width: 96px; min-width: 96px; font-size: var(--fs-clock-hero); font-weight: var(--fw-clock); min-height: 64px; cursor: text;
+  width: 96px; min-width: 96px; font-size: min(var(--fs-clock-hero), 17vw); font-weight: var(--fw-clock); min-height: 64px; cursor: text;
 }
 .stepper-input {
-  width: 96px; font-size: var(--fs-clock-hero); font-weight: var(--fw-clock); text-align: center; background: var(--surface-2);
+  width: 96px; font-size: min(var(--fs-clock-hero), 17vw); font-weight: var(--fw-clock); text-align: center; background: var(--surface-2);
   border: 2px solid var(--focus); border-radius: var(--r-sm); font-variant-numeric: tabular-nums; padding: 0;
 }
 .timepicker { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); }
 .timepicker-row { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: var(--sp-3); }
 .timepicker-row .stepper-row { gap: var(--sp-1); }
 .timepicker-row { flex-wrap: nowrap; }
-.timepicker .colon { font-size: var(--fs-clock-hero); font-weight: var(--fw-clock); }
+.timepicker .colon { font-size: min(var(--fs-clock-hero), 17vw); font-weight: var(--fw-clock); }
 .timepicker .ampm [role="radio"] { min-width: 64px; min-height: 64px; }
 @media (max-width: 380px) {
   .stepper.ring .stepper-btn { width: 56px; height: 56px; }
-  .stepper.ring .stepper-value, .stepper-input { width: 80px; min-width: 80px; font-size: 3.25rem; }
+  .stepper.ring .stepper-value, .stepper-input { width: 80px; min-width: 80px; font-size: min(3.25rem, 14vw); }
 }
 
 /* ── Inputs ────────────────────────────────────────────────────────────── */
