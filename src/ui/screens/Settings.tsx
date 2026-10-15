@@ -15,7 +15,7 @@ import { Icon } from '../icons';
 import { navigate } from '../router';
 import { setNotice } from '../notices';
 
-export const SOURCE_URL = 'https://github.com/byessilyurt/test-repo';
+export const SOURCE_URL = 'https://github.com/byessilyurt/rouse';
 
 const MATH_FALLBACK: FallbackMissionConfig = { type: 'math', difficulty: 3, count: 20 };
 

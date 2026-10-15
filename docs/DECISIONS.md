@@ -214,3 +214,11 @@ Verification note: all 29 Java sources compile with `javac -Xlint:all` against h
 Orchestrator review of gap A: I read the `CallPolicy` + `RingService` diff and the `RingEngine.cancelTest` diff. `cancelTest` runs on the state thread through the plugin's `run` wrapper, the same as `dismiss`. The agent's real Gradle build is BUILD SUCCESSFUL (0 lint errors, JUnit 37/37), and `npm run check` passes (330 unit, 27 e2e).
 
 **D-074 — The project moved to github.com/byessilyurt/rouse (user request).** That repo was empty. Its `main` was seeded with the last fully green commit (`f1094d9`; web + Android CI passing), and the later work (gap A, verified, plus gap B in progress) goes through draft PR byessilyurt/rouse#1. Full history is preserved. The old byessilyurt/test-repo#2 has a pointer comment and is no longer updated. Work continues from the existing checkout, which has an extra `rouse` remote, so the running agent isn't disrupted.
+
+**D-075 — Modals make the rest of the page `inert`,** and the focus trap is computed from real tab stops, because `aria-modal` alone isn't honoured everywhere. The route-change focus step skips while a modal is open, which also guards against the settings-import focus race seen once in e2e.
+
+**D-076 — Very large display text (ring clock, alarm times, editor digits) is capped with `vw`** so it never overflows a 360 px screen at 200 % font. All other text reflows at 200 %.
+
+**D-077 — Releases are cut by pushing a `v*` tag.** `release.yml` builds a debug-signed APK and attaches it to a GitHub Release (stated in the README and the release notes). Signing with a real release key is deferred until there's a maintainer keystore.
+
+Orchestrator verification of gap B: `npm run check` passes (330 unit, 27 e2e). `e2e/settings.spec.ts` passes 16/16 with repeat-each. I reviewed `release.yml` and the README. The README is honest that there has been no device testing yet. The accessibility audit (45 scenes × 2 themes × normal and 200 % font, 360 px) is summarised in docs/accessibility.md.

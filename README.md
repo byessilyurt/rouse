@@ -100,7 +100,7 @@ Rouse doesn't try to block power-off or uninstall. That needs an Accessibility s
 
 ## Install
 
-1. Download `rouse-<version>-debug.apk` from the [latest GitHub Release](https://github.com/byessilyurt/test-repo/releases/latest). If there is no release yet, open the newest green run of the **CI** workflow under *Actions* and download the `rouse-debug-apk` artifact (GitHub asks you to sign in to download artifacts).
+1. Download `rouse-<version>-debug.apk` from the [latest GitHub Release](https://github.com/byessilyurt/rouse/releases/latest). If there is no release yet, open the newest green run of the **CI** workflow under *Actions* and download the `rouse-debug-apk` artifact (GitHub asks you to sign in to download artifacts).
 2. Open the file on your phone. Android asks you to allow installs from this source ("unknown sources"). Allow it for your browser or file manager only.
 3. Open Rouse. The first-run screens ask for:
    - **Notifications** (Android 13+), so the ring notification can appear.
