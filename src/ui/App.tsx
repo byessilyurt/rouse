@@ -151,7 +151,7 @@ function Routes() {
 
   // Guards: unknown → alarms; onboarding first; locked while ringing.
   let redirect: string | null = null;
-  if (ring?.state === 'ringing' && !RING_ROUTES.has(match.name) && !(ringMgr.isEarly() && match.name === 'snoozed')) {
+  if (ringMgr.needsRingUi() && !RING_ROUTES.has(match.name)) {
     redirect = '/ring';
   } else if (ring?.state === 'wake-check-prompt' && match.name !== 'wakecheck' && !RING_ROUTES.has(match.name)) {
     redirect = '/wakecheck';
