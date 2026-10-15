@@ -52,7 +52,7 @@ test('4 · chained missions run in order with a "Next" interstitial', async ({ p
   await startMission(page);
   await expect(page.getByRole('heading', { name: 'Mission 1 of 3 · Math' })).toBeVisible();
   await solveMath(page, 1);
-  await expect(page.getByText('Next: Typing')).toBeVisible();
+  await expect(page.getByTestId('mission-play').getByText('Next: Typing')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Mission 2 of 3 · Typing' })).toBeVisible();
   const box = page.getByRole('textbox', { name: 'Type the phrase' });
   await box.fill('Coffee is waiting for mx');
