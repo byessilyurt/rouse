@@ -47,7 +47,11 @@ function useModal(open: boolean, onClose: (() => void) | undefined, dismissible:
         return;
       }
       if (e.key !== 'Tab') return;
-      const items = [...el.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((n) => n.offsetParent !== null || n === document.activeElement);
+      // Roving-tabindex groups (tabindex=-1) and native radio groups are a single tab stop, so only that one counts as first/last.
+      const isTabStop = (n: HTMLElement) =>
+        n.tabIndex >= 0 &&
+        !(n instanceof HTMLInputElement && n.type === 'radio' && n.name && !n.checked && el.querySelector(`input[type="radio"][name="${CSS.escape(n.name)}"]:checked`));
+      const items = [...el.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((n) => (n.offsetParent !== null || n === document.activeElement) && isTabStop(n));
       if (items.length === 0) return;
       const first = items[0]!;
       const last = items[items.length - 1]!;
