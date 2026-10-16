@@ -1,5 +1,7 @@
 # Rouse — UX/UI Design Spec
 
+> The visual system (§4–§6) is replaced by the "Awake" language in [`design-language.md`](design-language.md) (D-078). Screens, flows, copy rules and accessibility requirements here still apply.
+
 > Audience: the coder and verifier agents. Scope follows D-007 (P0 items 1–11, plus re-ring after kill/reboot, local stats,
 > quick nap, bedtime reminder, and a squat mission labelled as cheatable). Platform rules follow D-002, D-004 and D-008.
 > Field names such as `alarm.snooze.maxCount` are indicative. Where they differ, the planner's domain model wins and

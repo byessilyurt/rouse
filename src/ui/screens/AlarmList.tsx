@@ -1,10 +1,10 @@
-/** Alarm list (design.md §3.2). */
+/** Home: the timeline (design-language.md §5.1). Height on the rail is real time; same data as design.md §3.2. */
 import { useState } from 'preact/hooks';
 import type { Alarm } from '../../core/types';
 import { isSkipping, napTime, nextOccurrence } from '../../core/schedule';
 import { Button, IconButton } from '../components/Button';
 import { Segmented, Toggle } from '../components/controls';
-import { Banner, Card, Screen, StatusPill } from '../components/layout';
+import { Banner, Screen, StatusPill } from '../components/layout';
 import { Dialog, Sheet } from '../components/overlays';
 import { toast } from '../components/feedback';
 import { useApp, useNow, useService, useUse24h } from '../context';
@@ -52,6 +52,12 @@ export function AlarmList() {
     .filter((a) => a.enabled && isSkipping(a, t) && a.skipUntil != null)
     .sort((a, b) => (a.skipUntil ?? 0) - (b.skipUntil ?? 0))[0];
 
+  const nowParts = timeParts(new Date(t).getHours(), new Date(t).getMinutes(), use24h);
+  const placed = alarms.map((a) => ({ alarm: a, at: a.enabled ? nextOccurrence(a, t) : null }));
+  const onRail = placed.filter((p) => p.at !== null && p.at - t <= DAY_MS).sort((x, y) => x.at! - y.at!) as Placed[];
+  const later = placed.filter((p) => p.at !== null && p.at - t > DAY_MS).sort((x, y) => x.at! - y.at!);
+  const off = alarms.filter((a) => !a.enabled || nextOccurrence(a, t) === null);
+
   const newAlarm = () => {
     clearDraft();
     navigate('/alarm/new');
@@ -59,8 +65,8 @@ export function AlarmList() {
 
   return (
     <Screen title="Alarms" chrome="tabs" currentTab="alarms" customHeading>
-      <div class="list-header">
-        <h1 tabIndex={-1}>Alarms</h1>
+      <div class="home-head-row">
+        <h1 tabIndex={-1} class="rule-label">Alarms</h1>
         <StatusPill tone={summary.tone} text={summary.text} href="#/health" ariaLabel={summary.ariaLabel} />
       </div>
       <WebDemoBanner collapsible />
@@ -124,8 +130,8 @@ export function AlarmList() {
         </div>
       ) : (
         <>
-          <Card
-            class="hero"
+          <div
+            class="home-head"
             data-testid="next-alarm"
             aria-label={
               next
@@ -133,21 +139,17 @@ export function AlarmList() {
                 : undefined
             }
           >
-            <span class="overline" aria-hidden="true">
-              Next alarm
-            </span>
+            <p class="home-clock clock-face" aria-hidden="true">
+              {nowParts.time}
+              {nowParts.suffix && <small class="small"> {nowParts.suffix}</small>}
+            </p>
             {next ? (
-              <>
-                <p class="hero-countdown" aria-hidden="true">
-                  {formatIn(next.fireAt - t)}
-                </p>
-                <p class="muted" aria-hidden="true">
-                  {formatDayTime(next.fireAt, t, use24h)} · {nextAlarm?.label || 'Alarm'}
-                </p>
-              </>
+              <p class="home-next" aria-hidden="true">
+                Next {formatIn(next.fireAt - t)} · <span class="tabular">{formatDayTime(next.fireAt, t, use24h)} · {nextAlarm?.label || 'Alarm'}</span>
+              </p>
             ) : (
               <>
-                <p class="hero-countdown">No alarms on</p>
+                <p class="home-next">No alarms on</p>
                 <p class="muted">Turn one on below or create a new one.</p>
               </>
             )}
@@ -157,15 +159,31 @@ export function AlarmList() {
                 Skipping {formatDayTime(skipping.skipUntil, t, use24h)}
               </p>
             )}
-          </Card>
+          </div>
+          <Timeline alarms={onRail} now={t} use24h={use24h} weekStart={settings.weekStartsOn} />
+          {later.length > 0 && (
+            <section class="section" aria-labelledby="h-later">
+              <h2 id="h-later">Later</h2>
+              <ul class="alarm-cards" aria-label="Later alarms">
+                {later.map(({ alarm: a }) => (
+                  <AlarmCard key={a.id} alarm={a} now={t} use24h={use24h} weekStart={settings.weekStartsOn} />
+                ))}
+              </ul>
+            </section>
+          )}
+          {off.length > 0 && (
+            <section class="section" aria-labelledby="h-off">
+              <h2 id="h-off">Off</h2>
+              <ul class="alarm-cards" aria-label="Alarms that are off">
+                {off.map((a) => (
+                  <AlarmCard key={a.id} alarm={a} now={t} use24h={use24h} weekStart={settings.weekStartsOn} />
+                ))}
+              </ul>
+            </section>
+          )}
           <Button variant="secondary" block icon="moon" onClick={() => setNapOpen(true)}>
             Quick nap
           </Button>
-          <ul class="alarm-cards" aria-label="Your alarms">
-            {alarms.map((a) => (
-              <AlarmCard key={a.id} alarm={a} now={t} use24h={use24h} weekStart={settings.weekStartsOn} />
-            ))}
-          </ul>
           <Button variant="primary" icon="plus" class="fab" onClick={newAlarm}>
             New alarm
           </Button>
@@ -173,6 +191,69 @@ export function AlarmList() {
       )}
       <QuickNapSheet open={napOpen} onClose={() => setNapOpen(false)} defaultMinutes={settings.napMinutes} use24h={use24h} now={now} />
     </Screen>
+  );
+}
+
+const DAY_MS = 86_400_000;
+const HOUR_MS = 3_600_000;
+/** Rail scale: 24 h = 24 × HOUR_PX. Marks keep MIN_GAP_PX apart; the printed time stays exact. */
+const HOUR_PX = 30;
+const MIN_GAP_PX = 84;
+
+interface Placed {
+  alarm: Alarm;
+  at: number;
+}
+
+function Timeline({ alarms, now, use24h, weekStart }: { alarms: Placed[]; now: number; use24h: boolean; weekStart: 0 | 1 }) {
+  const yOf = (at: number) => ((at - now) / HOUR_MS) * HOUR_PX;
+  const ys: number[] = [];
+  for (const p of alarms) ys.push(Math.max(yOf(p.at), MIN_GAP_PX * 0.5, ys.length ? ys[ys.length - 1]! + MIN_GAP_PX : 0));
+  const height = Math.max(24 * HOUR_PX, (ys[ys.length - 1] ?? 0) + MIN_GAP_PX);
+  const firstHour = Math.ceil(now / HOUR_MS) * HOUR_MS;
+  const hours: { y: number; label: string | null }[] = [];
+  for (let h = firstHour; h <= now + DAY_MS; h += HOUR_MS) {
+    const hr = new Date(h).getHours();
+    const label = hr % 3 === 0 ? (use24h ? String(hr).padStart(2, '0') : `${hr % 12 || 12}${hr < 12 ? 'a' : 'p'}`) : null;
+    hours.push({ y: yOf(h), label });
+  }
+  const sleepEnd = alarms.length > 0 ? yOf(alarms[0]!.at) : 0;
+  return (
+    <div class="rail" style={`height: ${height}px`} data-testid="timeline">
+      <div aria-hidden="true">
+        {sleepEnd > 0 && <span class="rail-sleep" style={`top: 0; height: ${sleepEnd}px`} />}
+        {sleepEnd > 120 && (
+          <span class="rail-sleep-label" style={`top: ${sleepEnd / 2 - 10}px`}>
+            {formatIn(alarms[0]!.at - now).replace(/^in /, '')} until it rings
+          </span>
+        )}
+        {hours.map((h) => (
+          <span key={h.y}>
+            <span class={`rail-tick${h.label ? ' major' : ''}`} style={`top: ${h.y}px`} />
+            {h.label && h.y > 18 && (
+              <span class="rail-hour" style={`top: ${h.y}px`}>
+                {h.label}
+              </span>
+            )}
+          </span>
+        ))}
+        <span class="rail-now" />
+        <span class="rail-now-label">Now</span>
+        <span class="rail-end">+24 h</span>
+      </div>
+      {alarms.length > 0 && (
+        <ul class="marks" aria-label="Alarms in the next 24 hours">
+          {alarms.map((p, i) => (
+            <AlarmCard key={p.alarm.id} alarm={p.alarm} now={now} use24h={use24h} weekStart={weekStart} liClass="mark" liStyle={`top: ${ys[i]}px`} />
+          ))}
+        </ul>
+      )}
+      {alarms.length === 0 && (
+        <p class="rail-sleep-label" style="top: 48px">
+          Nothing rings in the next 24 hours.
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -184,7 +265,21 @@ function safeLen(fn: () => readonly unknown[]): number {
   }
 }
 
-function AlarmCard({ alarm: a, now, use24h, weekStart }: { alarm: Alarm; now: number; use24h: boolean; weekStart: 0 | 1 }) {
+function AlarmCard({
+  alarm: a,
+  now,
+  use24h,
+  weekStart,
+  liClass,
+  liStyle,
+}: {
+  alarm: Alarm;
+  now: number;
+  use24h: boolean;
+  weekStart: 0 | 1;
+  liClass?: string;
+  liStyle?: string;
+}) {
   const service = useService();
   const { newId, now: clock } = useApp();
   const [menu, setMenu] = useState(false);
@@ -208,10 +303,10 @@ function AlarmCard({ alarm: a, now, use24h, weekStart }: { alarm: Alarm; now: nu
   };
 
   return (
-    <li>
-      <div class={`card alarm-card${a.enabled ? '' : ' off'}`} data-testid="alarm-card" data-alarm-id={a.id}>
+    <li class={liClass} style={liStyle}>
+      <div class={`alarm-card${a.enabled ? '' : ' off'}`} data-testid="alarm-card" data-alarm-id={a.id}>
         <a class="alarm-card-main" href={`#/alarm/${a.id}`}>
-          <span class="alarm-time">
+          <span class="alarm-time clock-face">
             <time>{tp.time}</time>
             {tp.suffix && <small>{tp.suffix}</small>}
           </span>

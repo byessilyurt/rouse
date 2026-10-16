@@ -5,6 +5,7 @@ import { useApp, useNow, useRingManager, useService, useUse24h } from '../contex
 import { formatDayTime, formatDuration, formatIn, formatInstantTime } from '../format';
 import { Icon } from '../icons';
 import { navigate } from '../router';
+import { WAKE, useWake } from '../wake';
 
 export function DoneScreen() {
   const { now } = useApp();
@@ -24,11 +25,19 @@ export function DoneScreen() {
   const next = service.nextFire();
   const wakeCheckAt = ring?.state === 'wake-check-wait' ? ring.wakeCheckAt : null;
   const back = isTest && mgr.testReturnTo ? mgr.testReturnTo : '/alarms';
+  useWake(WAKE.done);
 
   return (
     <Screen title="Good morning" chrome="none" customHeading>
-      <Icon name="sun" size={64} style="color: var(--accent)" />
-      <h1 tabIndex={-1}>Good morning</h1>
+      <h1 tabIndex={-1} class="done-title">
+        Good morning.
+        {!isTest && (
+          <>
+            <br />
+            Promise kept.
+          </>
+        )}
+      </h1>
       {isTest ? (
         <p>Test finished. Nothing was recorded.</p>
       ) : (

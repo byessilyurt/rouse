@@ -96,3 +96,15 @@ export async function startRingingAndOpen(page: Page, alarmId: string): Promise<
   await expect(page).toHaveURL(/#\/ring/);
   await expect(page.getByRole('button', { name: /Start mission|Turn off/ })).toBeVisible();
 }
+
+/** Editor (design-language.md §5.2): open the sheet behind a promise blank, e.g. openBlank(page, 'Time'). */
+export async function openBlank(page: Page, name: string): Promise<void> {
+  await page.getByRole('button', { name: new RegExp(`^${name}:`) }).first().click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+}
+
+/** Close the open editor sheet with its Done button. */
+export async function closeSheet(page: Page): Promise<void> {
+  await page.getByRole('dialog').getByRole('button', { name: 'Done', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+}

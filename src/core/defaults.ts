@@ -321,7 +321,7 @@ export function defaultAlarmDefaults(): AlarmDefaults {
 
 export function defaultSettings(): Settings {
   return {
-    theme: 'system',
+    theme: 'wake',
     clockFormat: 'system',
     weekStartsOn: 1,
     alarmDefaults: defaultAlarmDefaults(),

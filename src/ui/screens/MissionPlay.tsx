@@ -15,6 +15,7 @@ import { goBack, navigate } from '../router';
 import { getDraft } from '../draft';
 import { MissionView } from '../missions/MissionView';
 import { prefersReducedMotion } from '../missions/common';
+import { WAKE, missionWake, useWake } from '../wake';
 
 function SuccessOverlay() {
   return (
@@ -46,6 +47,7 @@ export function MissionPlayScreen({ step }: { step: number }) {
   const ctrl = mgr.getController();
   const session = mgr.getSession();
   const settings = service.getSettings();
+  useWake(session ? missionWake(Math.min(session.missionIndex, session.plan.length), Math.max(1, session.plan.length)) : WAKE.fallback);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [overlay, setOverlay] = useState(false);
   const [interstitial, setInterstitial] = useState<string | null>(null);

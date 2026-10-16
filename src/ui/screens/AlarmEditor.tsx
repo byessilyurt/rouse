@@ -1,4 +1,7 @@
-/** Alarm editor (design.md §3.3). Also edits "New alarm defaults" when id === 'defaults'. */
+/**
+ * Alarm editor as a promise (design-language.md §5.2): the alarm is a few sentences whose blanks open the
+ * controls of design.md §3.3 in sheets. Also edits "New alarm defaults" when id === 'defaults'.
+ */
 import type { ComponentChildren } from 'preact';
 import { useEffect, useReducer, useRef, useState } from 'preact/hooks';
 import type { SoundInfo } from '../../platform/AlarmBackend';
@@ -8,7 +11,7 @@ import { nextOccurrence } from '../../core/schedule';
 import { validateAlarm } from '../../core/validation';
 import { Button, IconButton } from '../components/Button';
 import { DayChips, Select, Stepper, TextField, TimePicker, Toggle } from '../components/controls';
-import { Banner, ListRow, Screen, StatusPill } from '../components/layout';
+import { Banner, Screen, StatusPill } from '../components/layout';
 import { Dialog, Sheet } from '../components/overlays';
 import { toast } from '../components/feedback';
 import { useApp, useNow, useService, useUse24h } from '../context';
@@ -30,6 +33,13 @@ const WAKE_DELAYS = [3, 5, 10, 15];
 const WAKE_WINDOWS = [1, 2, 3, 5];
 
 type Section = 'time' | 'repeat' | 'label' | 'sound' | 'snooze' | 'missions' | 'wakecheck' | 'other';
+
+/** Sheet to reopen when the editor comes back from a mission sub-route (picker, config, QR). */
+let reopenSheet: Section | null = null;
+const toMissionRoute = (path: string) => {
+  reopenSheet = 'missions';
+  navigate(path);
+};
 
 export function sectionOf(path: string): Section {
   const head = path.split('.')[0] ?? '';
@@ -97,6 +107,11 @@ export function AlarmEditor({ id }: { id: string }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [soundSheet, setSoundSheet] = useState(false);
   const [rampSheet, setRampSheet] = useState(false);
+  const [sheet, setSheet] = useState<Section | 'volume' | null>(() => {
+    const s = reopenSheet;
+    reopenSheet = null;
+    return s;
+  });
   const [sounds, setSounds] = useState<SoundInfo[]>([]);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -130,20 +145,9 @@ export function AlarmEditor({ id }: { id: string }) {
     setTimeout(() => {
       const first = list[0];
       if (!first) return;
-      const qr = /^missions\.(\d+)\.expectedCode/.exec(first.path);
-      if (qr) {
-        const el = missionRefs.current[Number(qr[1])];
-        el?.scrollIntoView({ block: 'center' });
-        el?.focus();
-        return;
-      }
-      const sec = document.getElementById(`sec-${sectionOf(first.path)}`);
-      sec?.scrollIntoView({ block: 'center' });
-      const target = sec?.querySelector<HTMLElement>('[role="alert"]');
-      if (target) {
-        target.tabIndex = -1;
-        target.focus();
-      }
+      const blank = document.querySelector<HTMLElement>(`.blank[data-section="${sectionOf(first.path)}"]`);
+      blank?.scrollIntoView({ block: 'center' });
+      blank?.focus();
     }, 0);
   };
 
@@ -249,16 +253,41 @@ export function AlarmEditor({ id }: { id: string }) {
         </Banner>
       )}
 
+      <PromiseText
+        alarm={a}
+        defaultsMode={defaultsMode}
+        use24h={use24h}
+        weekStart={settings.weekStartsOn}
+        soundLabel={soundName(a.sound, sounds)}
+        invalid={(sec) => issuesIn(sec).length > 0}
+        open={(sec) => {
+          if (sec === 'sound') setSoundSheet(true);
+          else if (sec === 'ramp') setRampSheet(true);
+          else setSheet(sec);
+        }}
+        onVibrate={() => set({ vibrate: !a.vibrate })}
+      />
+      {!defaultsMode && <RingsIn alarm={a} />}
+      {showErrors && issues.length > 0 && (
+        <div role="alert" class="stack-sm">
+          {issues.map((i) => (
+            <p class="error-text" key={i.path + i.message}>
+              <Icon name="alert-triangle" size={18} />
+              {i.message}
+            </p>
+          ))}
+        </div>
+      )}
+
       {!defaultsMode && (
-        <EditorSection id="time" title="Time">
+        <EditorSection id="time" title="Time" open={sheet} onClose={() => setSheet(null)}>
           <TimePicker hour={a.hour} minute={a.minute} use24h={use24h} onChange={(hour, minute) => set({ hour, minute })} />
-          <RingsIn alarm={a} />
           <SectionErrors s="time" />
         </EditorSection>
       )}
 
       {!defaultsMode && (
-        <EditorSection id="repeat" title="Repeat">
+        <EditorSection id="repeat" title="Repeat" open={sheet} onClose={() => setSheet(null)}>
           <DayChips value={a.days} weekStart={settings.weekStartsOn} onChange={(days) => set({ days })} />
           <div class="chips" role="group" aria-label="Repeat presets">
             {(
@@ -280,11 +309,11 @@ export function AlarmEditor({ id }: { id: string }) {
       )}
 
       {!defaultsMode && (
-        <EditorSection id="label" title="Label">
+        <EditorSection id="label" title="Reason" open={sheet} onClose={() => setSheet(null)}>
           <TextField
             label="Label"
             hideLabel
-            placeholder="Label (optional)"
+            placeholder="e.g. the 8:10 train"
             maxLength={MAX_LABEL_LENGTH}
             value={a.label}
             onValue={(label) => set({ label: label.slice(0, MAX_LABEL_LENGTH) })}
@@ -295,40 +324,21 @@ export function AlarmEditor({ id }: { id: string }) {
         </EditorSection>
       )}
 
-      <EditorSection id="sound" title="Sound">
-        <ul class="list">
-          <li>
-            <ListRow title="Sound" icon="volume-2" value={soundName(a.sound, sounds)} onClick={() => setSoundSheet(true)} ariaLabel={`Sound: ${soundName(a.sound, sounds)}. Change`} />
-          </li>
-          <li>
-            <ListRow
-              title="Volume ramp"
-              description="Starts quiet and gets louder."
-              value={RAMP_OPTIONS.find((o) => o.value === a.volumeRampSec)?.label ?? `${a.volumeRampSec} s`}
-              onClick={() => setRampSheet(true)}
-              ariaLabel={`Volume ramp: ${RAMP_OPTIONS.find((o) => o.value === a.volumeRampSec)?.label ?? `${a.volumeRampSec} s`}. Change`}
-            />
-          </li>
-          <li>
-            <Stepper
-              label="Volume"
-              value={a.volume}
-              min={LIMITS.volume.min}
-              max={LIMITS.volume.max}
-              step={10}
-              format={(v) => `${v}%`}
-              valueText={(v) => `${v} percent`}
-              onChange={(volume) => set({ volume })}
-            />
-          </li>
-          <li>
-            <Toggle checked={a.vibrate} onChange={(vibrate) => set({ vibrate })} label="Vibrate" />
-          </li>
-        </ul>
+      <EditorSection id="volume" title="Volume" open={sheet} onClose={() => setSheet(null)}>
+        <Stepper
+          label="Volume"
+          value={a.volume}
+          min={LIMITS.volume.min}
+          max={LIMITS.volume.max}
+          step={10}
+          format={(v) => `${v}%`}
+          valueText={(v) => `${v} percent`}
+          onChange={(volume) => set({ volume })}
+        />
         <SectionErrors s="sound" />
       </EditorSection>
 
-      <EditorSection id="snooze" title="Snooze">
+      <EditorSection id="snooze" title="Snooze" open={sheet} onClose={() => setSheet(null)}>
         <Toggle checked={a.snooze.enabled} onChange={(enabled) => set({ snooze: { ...a.snooze, enabled } })} label="Allow snooze" />
         {a.snooze.enabled && (
           <>
@@ -362,6 +372,8 @@ export function AlarmEditor({ id }: { id: string }) {
       <EditorSection
         id="missions"
         title="Missions"
+        open={sheet}
+        onClose={() => setSheet(null)}
         aside={
           <span class="muted small" aria-label={`${missionCount} of ${MAX_MISSIONS} missions`}>
             {missionCount} of {MAX_MISSIONS}
@@ -379,7 +391,7 @@ export function AlarmEditor({ id }: { id: string }) {
                 btnRef={(el) => {
                   missionRefs.current[i] = el;
                 }}
-                onOpen={() => navigate(`/alarm/${id}/missions/${i}`)}
+                onOpen={() => toMissionRoute(`/alarm/${id}/missions/${i}`)}
                 onMove={(dir) =>
                   updateDraftAlarm((d) => {
                     const ms = [...d.missions];
@@ -400,7 +412,7 @@ export function AlarmEditor({ id }: { id: string }) {
             <span class="mission-index" aria-hidden="true">
               <Icon name="shuffle" size={16} />
             </span>
-            <button type="button" class="mission-row-main" onClick={() => navigate(`/alarm/${id}/missions/${missionCount}?type=random`)}>
+            <button type="button" class="mission-row-main" onClick={() => toMissionRoute(`/alarm/${id}/missions/${missionCount}?type=random`)}>
               <span class="stack-sm grow" style="gap: 0">
                 <span class="list-row-title">Random</span>
                 <span class="list-row-desc">{missionCount > 0 ? 'Non-QR missions are swapped for random ones each time' : 'A different mission each time'}</span>
@@ -416,7 +428,7 @@ export function AlarmEditor({ id }: { id: string }) {
           icon="plus"
           ariaDisabled={missionCount >= MAX_MISSIONS}
           aria-describedby={missionCount >= MAX_MISSIONS ? 'max-missions' : undefined}
-          onClick={() => navigate(`/alarm/${id}/missions`)}
+          onClick={() => toMissionRoute(`/alarm/${id}/missions`)}
         >
           Add mission
         </Button>
@@ -428,7 +440,7 @@ export function AlarmEditor({ id }: { id: string }) {
         <SectionErrors s="missions" />
       </EditorSection>
 
-      <EditorSection id="wakecheck" title="Wake-up check">
+      <EditorSection id="wakecheck" title="Wake-up check" open={sheet} onClose={() => setSheet(null)}>
         <Toggle
           checked={a.wakeUpCheck.enabled}
           onChange={(enabled) => set({ wakeUpCheck: { ...a.wakeUpCheck, enabled } })}
@@ -463,9 +475,10 @@ export function AlarmEditor({ id }: { id: string }) {
       )}
 
       {!defaultsMode && (
-        <EditorSection id="test" title="Test">
+        <section class="section" aria-labelledby="h-test">
+          <h2 id="h-test">Test</h2>
           <TestSection onTest={testAlarm} />
-        </EditorSection>
+        </section>
       )}
 
       {!defaultsMode && !isNew && (
@@ -544,16 +557,134 @@ function withCurrent(values: number[], current: number): number[] {
   return values.includes(current) ? values : [...values, current].sort((x, y) => x - y);
 }
 
-function EditorSection({ id, title, children, aside }: { id: Section | 'test'; title: string; children: ComponentChildren; aside?: ComponentChildren }) {
+/** A blank's controls, shown in a sheet while `open` names this section. */
+function EditorSection({
+  id,
+  title,
+  children,
+  aside,
+  open,
+  onClose,
+}: {
+  id: Section | 'volume';
+  title: string;
+  children: ComponentChildren;
+  aside?: ComponentChildren;
+  open: Section | 'volume' | null;
+  onClose: () => void;
+}) {
   return (
-    <section class="section" id={`sec-${id}`} aria-labelledby={`h-${id}`}>
-      <h2 id={`h-${id}`}>
-        <span>{title}</span>
+    <Sheet open={open === id} title={title} onClose={onClose} footer={<Button variant="primary" block onClick={onClose}>Done</Button>}>
+      <div class="stack" id={`sec-${id}`}>
         {aside}
-      </h2>
-      {children}
-    </section>
+        {children}
+      </div>
+    </Sheet>
   );
+}
+
+type BlankTarget = Section | 'volume' | 'ramp';
+
+/** The alarm as sentences; every bracketed value is a blank (design-language.md §5.2). */
+function PromiseText({
+  alarm: a,
+  defaultsMode,
+  use24h,
+  weekStart,
+  soundLabel,
+  invalid,
+  open,
+  onVibrate,
+}: {
+  alarm: Alarm;
+  defaultsMode: boolean;
+  use24h: boolean;
+  weekStart: 0 | 1;
+  soundLabel: string;
+  invalid: (s: Section) => boolean;
+  open: (s: BlankTarget) => void;
+  onVibrate: () => void;
+}) {
+  const blank = (target: BlankTarget, text: string, name: string, opts: { empty?: boolean; section?: Section } = {}) => {
+    const section = opts.section ?? (target === 'volume' || target === 'ramp' ? 'sound' : target);
+    return (
+      <button
+        type="button"
+        class={`blank${opts.empty ? ' empty' : ''}`}
+        data-section={section}
+        aria-invalid={invalid(section) ? 'true' : undefined}
+        aria-label={`${name}: ${text}. Change`}
+        onClick={() => open(target)}
+      >
+        {text}
+      </button>
+    );
+  };
+  const ramp = a.volumeRampSec === 0 ? 'at full volume' : `rising over ${RAMP_OPTIONS.find((o) => o.value === a.volumeRampSec)?.label ?? `${a.volumeRampSec} s`}`;
+  return (
+    <div class="promise-block" data-testid="promise">
+      {!defaultsMode && (
+        <p class="promise">
+          Wake me at {blank('time', formatTime(a.hour, a.minute, use24h), 'Time')} {blank('repeat', repeatPhrase(a.days, weekStart), 'Repeat')}.
+        </p>
+      )}
+      {!defaultsMode && (
+        <p class="promise">
+          {a.label ? <>It's for {blank('label', a.label, 'Reason')}.</> : blank('label', 'Add a reason', 'Reason', { empty: true })}
+        </p>
+      )}
+      <p class="promise">
+        {a.missions.length === 0 && !a.randomMission ? (
+          <>I won't have to prove I'm up. {blank('missions', 'Add a mission', 'Missions', { empty: true })}</>
+        ) : (
+          <>I'll prove I'm up with {blank('missions', missionPhrase(a), 'Missions')}.</>
+        )}
+      </p>
+      <p class="promise">
+        Ring {blank('sound', soundLabel, 'Sound', { section: 'sound' })} at {blank('volume', `${a.volume} %`, 'Volume')}, {blank('ramp', ramp, 'Volume ramp')},{' '}
+        <button type="button" class="blank" aria-pressed={a.vibrate} aria-label={`Vibration: ${a.vibrate ? 'on' : 'off'}. Change`} onClick={onVibrate}>
+          {a.vibrate ? 'with vibration' : 'without vibration'}
+        </button>
+        .
+      </p>
+      <p class="promise">
+        {a.snooze.enabled ? (
+          <>
+            Let me snooze {blank('snooze', a.snooze.maxCount === 1 ? 'once' : `${a.snooze.maxCount} times`, 'Snoozes allowed')} for{' '}
+            {blank('snooze', `${a.snooze.intervalMin} min`, 'Snooze length')}
+            {a.snooze.requireMission ? <>, {blank('snooze', 'after the mission', 'Snoozing needs the mission')}</> : null}.
+          </>
+        ) : (
+          <>{blank('snooze', 'No snoozing', 'Snooze')}.</>
+        )}
+      </p>
+      <p class="promise">
+        {a.wakeUpCheck.enabled ? (
+          <>
+            Then check I'm up {blank('wakecheck', `${a.wakeUpCheck.delayMin} min`, 'Ask after')} later, and give me{' '}
+            {blank('wakecheck', `${a.wakeUpCheck.windowMin} min`, 'Time to answer')} to answer.
+          </>
+        ) : (
+          <>{blank('wakecheck', "Don't check on me", 'Wake-up check')} afterwards.</>
+        )}
+      </p>
+    </div>
+  );
+}
+
+function missionPhrase(a: Alarm): string {
+  const names = a.missions.map((m) => missionName(m.type).toLowerCase());
+  if (a.randomMission) return names.length > 0 ? `random missions (QR kept)` : 'a random mission';
+  return names.length <= 1 ? (names[0] ?? 'a mission') : `${names.slice(0, -1).join(', ')}, then ${names[names.length - 1]}`;
+}
+
+function repeatPhrase(days: readonly Weekday[], weekStart: 0 | 1): string {
+  const set = new Set(days);
+  if (set.size === 0) return 'once';
+  if (set.size === 7) return 'every day';
+  if (set.size === 5 && [1, 2, 3, 4, 5].every((d) => set.has(d as Weekday))) return 'on weekdays';
+  if (set.size === 2 && set.has(0) && set.has(6)) return 'on weekends';
+  return `on ${repeatSummary(days, weekStart, null, 0)}`;
 }
 
 function RingsIn({ alarm }: { alarm: Alarm }) {

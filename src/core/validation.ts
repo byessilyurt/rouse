@@ -417,7 +417,7 @@ export function parseSettings(raw: unknown): Settings {
   const fb = isRecord(raw.fallback) ? raw.fallback : {};
   const bt = isRecord(raw.bedtimeReminder) ? raw.bedtimeReminder : {};
   return {
-    theme: oneOf(raw.theme, ['system', 'light', 'dark'] as const, d.theme),
+    theme: oneOf(raw.theme, ['wake', 'system', 'light', 'dark'] as const, d.theme),
     clockFormat: oneOf(raw.clockFormat, ['system', '12h', '24h'] as const, d.clockFormat),
     weekStartsOn: oneOf(raw.weekStartsOn, [0, 1] as const, d.weekStartsOn),
     alarmDefaults: parseAlarmDefaults(raw.alarmDefaults, d.alarmDefaults),

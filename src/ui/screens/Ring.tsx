@@ -1,11 +1,12 @@
-/** Ringing screen (design.md §3.6). */
+/** Ringing screen (design.md §3.6; design-language.md §5.3: the page is the signal and quotes the promise). */
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { snoozesLeft } from '../../core/ringController';
 import { Button } from '../components/Button';
 import { Banner, Screen, Spinner } from '../components/layout';
 import { announce } from '../components/feedback';
-import { useApp, useNow, useRingManager, useUse24h } from '../context';
-import { formatFullDate, missionProseName, timeParts } from '../format';
+import { useApp, useNow, useRingManager, useService, useUse24h } from '../context';
+import { formatFullDate, formatTime, missionProseName, timeParts } from '../format';
+import { WAKE, useSignal, useWake } from '../wake';
 import { goBack, navigate } from '../router';
 
 export function RingScreen() {
@@ -21,6 +22,10 @@ export function RingScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const ringing = ring?.state === 'ringing' && !!ctrl && !!session;
+  useWake(WAKE.ringing);
+  // Dark/System themes keep their regime; the signal page is for 'wake' and 'light' (design-language.md §1.3).
+  const theme = useService().getSettings().theme;
+  useSignal(ringing && (theme === 'wake' || theme === 'light'));
 
   // Tell the backend the mission UI is up (cancels the native fallback timer) and announce once.
   useEffect(() => {
@@ -134,7 +139,16 @@ export function RingScreen() {
           <time>{tp.time}</time>
           {tp.suffix && <span style="font-size: var(--fs-xl)"> {tp.suffix}</span>}
         </h1>
-        {alarm.label && <p class="ring-label">{alarm.label}</p>}
+        <p class="ring-quote">
+          You said you'd be up at {formatTime(alarm.hour, alarm.minute, use24h)}
+          {alarm.label ? (
+            <>
+              {' '}— for <span class="ring-label">{alarm.label}</span>.
+            </>
+          ) : (
+            '.'
+          )}
+        </p>
         {session.snoozeCount > 0 && (
           <p class="muted">
             Snoozed {session.snoozeCount} of {alarm.snooze.maxCount}
@@ -147,8 +161,8 @@ export function RingScreen() {
           </Banner>
         )}
         <div class="ring-actions">
-          <Button variant="primary" size="ring-primary" block data-initial-focus="" subLabel={plan.length > 0 ? missionLabel : undefined} onClick={start}>
-            {plan.length > 0 ? 'Start mission' : 'Turn off'}
+          <Button variant="primary" size="ring-primary" block data-initial-focus="" subLabel={plan.length > 0 ? `Start mission: ${missionLabel}` : undefined} onClick={start}>
+            {plan.length > 0 ? 'Keep my word' : 'Turn off'}
           </Button>
           {snoozeShown && (
             <>

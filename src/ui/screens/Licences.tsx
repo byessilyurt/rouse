@@ -1,6 +1,8 @@
 /** Open-source licences (design.md §3.14 About). Bundled text only; no network. */
 import { Screen } from '../components/layout';
 import { goBack } from '../router';
+import oflFraunces from '../fonts/OFL-Fraunces.txt?raw';
+import oflBricolage from '../fonts/OFL-BricolageGrotesque.txt?raw';
 
 const MIT = (holder: string) => `MIT License
 
@@ -12,6 +14,7 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.`;
 
+
 const ENTRIES: { name: string; licence: string; text: string }[] = [
   { name: 'Rouse', licence: 'MIT', text: MIT('Rouse contributors') },
   { name: 'Preact', licence: 'MIT', text: MIT('2015-present Jason Miller') },
@@ -21,6 +24,8 @@ const ENTRIES: { name: string; licence: string; text: string }[] = [
     licence: 'Apache-2.0',
     text: 'Copyright 2017 Cosmo Wolfe.\n\nLicensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.',
   },
+  { name: 'Fraunces (font)', licence: 'SIL OFL 1.1', text: oflFraunces },
+  { name: 'Bricolage Grotesque (font)', licence: 'SIL OFL 1.1', text: oflBricolage },
   {
     name: 'Alarm sounds',
     licence: 'CC0 1.0',

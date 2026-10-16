@@ -13,11 +13,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "check": "npm run typecheck && npm run check:network && npm run check:sounds && npm run test && npm run build && npm run e2e",
+    "check": "npm run typecheck && npm run check:contrast && npm run check:network && npm run check:sounds && npm run test && npm run build && npm run e2e",
     "cap:sync": "cap sync android",
     "gen:sounds": "node scripts/gen-sounds.ts",
     "check:sounds": "node scripts/gen-sounds.ts --check",
-    "check:network": "node scripts/check-no-network.mjs"
+    "check:network": "node scripts/check-no-network.mjs",
+    "check:contrast": "node scripts/check-contrast.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",

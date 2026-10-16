@@ -1,6 +1,6 @@
 /** Plan §4.2 scenarios 1, 2, 11: CRUD, validation, one-off & nap consumption. */
 import { test, expect } from '@playwright/test';
-import { installClock, makeAlarm, open, seed, T0 } from './helpers';
+import { closeSheet, installClock, makeAlarm, open, openBlank, seed, T0 } from './helpers';
 
 test('1 · create, countdown, toggle, skip next, edit, delete', async ({ page }) => {
   await installClock(page, T0);
@@ -11,7 +11,9 @@ test('1 · create, countdown, toggle, skip next, edit, delete', async ({ page })
   await expect(page).toHaveURL(/#\/alarm\/new$/);
   await expect(page.getByRole('heading', { name: 'New alarm', level: 1 })).toBeFocused();
 
-  // Type the hour, step the minute.
+  // The alarm is a sentence; each blank opens its controls. Type the hour, step the minute.
+  await expect(page.getByTestId('promise')).toContainText("I'll prove I'm up with math.");
+  await openBlank(page, 'Time');
   await page.getByRole('spinbutton', { name: 'Hour' }).click();
   await page.getByRole('textbox', { name: 'Hour' }).fill('7');
   await page.keyboard.press('Enter');
@@ -19,8 +21,14 @@ test('1 · create, countdown, toggle, skip next, edit, delete', async ({ page })
   await page.getByRole('spinbutton', { name: 'Minute' }).click();
   await page.getByRole('textbox', { name: 'Minute' }).fill('30');
   await page.keyboard.press('Enter');
+  await closeSheet(page);
+  await openBlank(page, 'Repeat');
   await page.getByRole('button', { name: 'Weekdays', exact: true }).click();
+  await closeSheet(page);
+  await openBlank(page, 'Reason');
   await page.getByRole('textbox', { name: 'Label' }).fill('Wake up');
+  await closeSheet(page);
+  await expect(page.getByTestId('promise')).toContainText("Wake me at 07:30 on weekdays.It's for Wake up.");
   await expect(page.getByTestId('rings-in')).toHaveText('Rings in 1 h 30 m');
   await page.getByRole('button', { name: 'Save alarm' }).click();
 
@@ -62,7 +70,9 @@ test('1 · create, countdown, toggle, skip next, edit, delete', async ({ page })
   // Edit.
   await card.getByRole('link').click();
   await expect(page.getByRole('heading', { name: 'Edit alarm' })).toBeVisible();
+  await openBlank(page, 'Reason');
   await page.getByRole('textbox', { name: 'Label' }).fill('Gym');
+  await closeSheet(page);
   await page.getByRole('button', { name: 'Save alarm' }).click();
   await expect(card).toContainText('Gym');
 
@@ -80,6 +90,7 @@ test('2 · validation: unregistered QR blocks Save; a 4th mission is disabled', 
   await seed(page);
   await open(page);
   await page.getByRole('button', { name: 'Create your first alarm' }).click();
+  await openBlank(page, 'Missions');
   await expect(page.getByText('1 of 3')).toBeVisible();
 
   await page.getByRole('button', { name: 'Add mission' }).click();
@@ -87,13 +98,18 @@ test('2 · validation: unregistered QR blocks Save; a 4th mission is disabled', 
   await expect(page.getByRole('heading', { name: 'QR / barcode' })).toBeVisible();
   await expect(page.getByTestId('qr-status')).toHaveText('No code yet');
   await page.getByRole('button', { name: 'Done' }).click();
+  // Back from mission setup, the missions sheet is open again.
   await expect(page.getByText('Code not set')).toBeVisible();
+  await closeSheet(page);
 
   await page.getByRole('button', { name: 'Save alarm' }).click();
   await expect(page.getByText('Scan a code for the QR mission, or remove it.')).toBeVisible();
   await expect(page).toHaveURL(/#\/alarm\/new$/);
-  await expect(page.getByRole('button', { name: /2: QR \/ barcode/ })).toBeFocused();
+  const missionsBlank = page.getByRole('button', { name: /^Missions:/ });
+  await expect(missionsBlank).toBeFocused();
+  await expect(missionsBlank).toHaveAttribute('aria-invalid', 'true');
 
+  await openBlank(page, 'Missions');
   await page.getByRole('button', { name: 'Add mission' }).click();
   await page.getByTestId('tile-typing').click();
   await page.getByRole('button', { name: 'Done' }).click();
@@ -109,6 +125,7 @@ test('2 · validation: unregistered QR blocks Save; a 4th mission is disabled', 
   await expect(page.getByTestId('mission-row').nth(1)).toContainText('Typing');
   await page.getByRole('button', { name: 'Remove QR / barcode' }).click();
   await expect(page.getByText('2 of 3')).toBeVisible();
+  await closeSheet(page);
   await page.getByRole('button', { name: 'Save alarm' }).click();
   await expect(page).toHaveURL(/#\/alarms$/);
   await expect(page.getByTestId('alarm-card').getByRole('img', { name: 'Missions: Math, then Typing' })).toBeVisible();
@@ -149,6 +166,7 @@ test('editor: "Try it now" practice and "Test this alarm" with "End test"', asyn
   await seed(page);
   await open(page);
   await page.getByRole('button', { name: 'Create your first alarm' }).click();
+  await openBlank(page, 'Missions');
   await page.getByRole('button', { name: /^1: Math/ }).click();
   await page.getByRole('radio', { name: 'Very easy' }).click();
   await page.getByRole('button', { name: 'Decrease Problems' }).click();
@@ -163,6 +181,7 @@ test('editor: "Try it now" practice and "Test this alarm" with "End test"', asyn
   await expect(page.getByRole('heading', { name: 'Math', level: 1 })).toBeVisible();
   await page.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByRole('button', { name: /^1: Math, Very easy · 1 problem/ })).toBeVisible();
+  await closeSheet(page);
 
   await page.getByRole('button', { name: 'Test this alarm' }).click();
   await expect(page.getByText("Test alarm · won't count in stats")).toBeVisible({ timeout: 10_000 });

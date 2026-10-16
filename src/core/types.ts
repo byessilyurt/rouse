@@ -341,7 +341,8 @@ export interface BedtimeReminderSettings {
 }
 
 export interface Settings {
-  theme: 'system' | 'light' | 'dark';
+  /** 'wake' (default) picks the colour regime from the wake level (design-language.md §1.3). */
+  theme: 'wake' | 'system' | 'light' | 'dark';
   /** 'system' follows the device locale/setting. */
   clockFormat: 'system' | '12h' | '24h';
   /** First column of the day picker. Display only. */

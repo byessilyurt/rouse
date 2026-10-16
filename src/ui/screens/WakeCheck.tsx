@@ -6,6 +6,7 @@ import { announce } from '../components/feedback';
 import { useApp, useNow, useRingManager } from '../context';
 import { formatClockCountdown } from '../format';
 import { navigate } from '../router';
+import { WAKE, useWake } from '../wake';
 
 export function WakeCheckScreen() {
   const { backend } = useApp();
@@ -14,6 +15,7 @@ export function WakeCheckScreen() {
   const ring = mgr.getRing();
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useWake(WAKE.wakeCheck);
   const spoken = useRef(new Set<number>());
 
   const prompt = ring?.state === 'wake-check-prompt' || ring?.state === 'wake-check-wait' ? ring : null;

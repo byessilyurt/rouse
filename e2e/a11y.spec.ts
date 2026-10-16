@@ -44,6 +44,11 @@ test('15a · names and ≥48 px targets on list, editor and settings; keyboard f
   expect(found).toBe(true);
   await page.keyboard.press('Enter');
   await expect(page.getByRole('heading', { name: 'New alarm', level: 1 })).toBeFocused();
+  // Blanks in the promise sentence are real buttons with their own names, and 48 px tall.
+  expect(await unnamed(page)).toEqual([]);
+  expect(await smallTargets(page, 48, 'main .blank')).toEqual([]);
+  await page.getByRole('button', { name: /^Time:/ }).focus();
+  await page.keyboard.press('Enter');
   const hour = page.getByRole('spinbutton', { name: 'Hour' });
   await hour.focus();
   await page.keyboard.press('ArrowUp');
@@ -51,11 +56,14 @@ test('15a · names and ≥48 px targets on list, editor and settings; keyboard f
   await page.getByRole('button', { name: 'Increase Hour' }).focus();
   await page.keyboard.press('Enter');
   await expect(hour).toHaveAttribute('aria-valuenow', '9');
+  await page.getByRole('dialog').getByRole('button', { name: 'Done', exact: true }).click();
+  await page.getByRole('button', { name: /^Repeat:/ }).click();
   await page.getByRole('button', { name: 'Friday' }).focus();
   await page.keyboard.press('Space');
   await expect(page.getByRole('button', { name: 'Friday' })).toHaveAttribute('aria-pressed', 'false');
   expect(await unnamed(page)).toEqual([]);
-  expect(await smallTargets(page, 48, 'main button:not(.btn-text), main [role="switch"], main select, main input')).toEqual([]);
+  expect(await smallTargets(page, 48, '[role="dialog"] button:not(.btn-text), [role="dialog"] [role="switch"]')).toEqual([]);
+  await page.getByRole('dialog').getByRole('button', { name: 'Done', exact: true }).click();
 
   // Back with unsaved changes asks first; the safe choice is focused.
   await page.getByRole('button', { name: 'Back' }).click();

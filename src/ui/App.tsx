@@ -3,8 +3,9 @@
  * locked-route guards while ringing, theme application, live regions.
  */
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef } from 'preact/hooks';
-import { AppContext, emitHealthChanged, useRingManager, useService, type AppDeps } from './context';
+import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
+import { AppContext, emitHealthChanged, useApp, useRingManager, useService, type AppDeps } from './context';
+import { circadianWake, getWakeOverride, subscribeWake } from './wake';
 import { LiveRegions } from './components/feedback';
 import { navigate, useLocation, type Location } from './router';
 import { Onboarding } from './screens/Onboarding';
@@ -221,25 +222,33 @@ function Routes() {
   return <>{renderRoute(match)}</>;
 }
 
+/** Applies --wake and the colour regime (data-theme) to <html> (design-language.md §1). */
 function ThemeSync() {
   const service = useService();
+  const { now } = useApp();
   const theme = service.getSettings().theme;
-  useEffect(() => {
+  // Layout effect: set the regime before the first paint so the app never flashes the wrong one.
+  useLayoutEffect(() => {
     const root = document.documentElement;
     const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
     const apply = () => {
-      const resolved = theme === 'system' ? (mq?.matches === false ? 'light' : 'dark') : theme;
+      const wake = getWakeOverride() ?? circadianWake(new Date(now()));
+      root.style.setProperty('--wake', wake.toFixed(3));
+      const resolved =
+        theme === 'wake' ? (wake >= 0.5 ? 'light' : 'dark') : theme === 'system' ? (mq?.matches === false ? 'light' : 'dark') : theme;
       root.setAttribute('data-theme', resolved);
-      const meta = document.querySelector('meta[name="theme-color"]');
-      meta?.setAttribute('content', resolved === 'light' ? '#f7f5f0' : '#0f1115');
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(root).getPropertyValue('--bg').trim() || (resolved === 'light' ? '#fffaf2' : '#15110f'));
     };
     apply();
-    if (theme === 'system' && mq) {
-      mq.addEventListener?.('change', apply);
-      return () => mq.removeEventListener?.('change', apply);
-    }
-    return undefined;
-  }, [theme]);
+    const unsub = subscribeWake(apply);
+    const tick = setInterval(apply, 60_000);
+    if (theme === 'system') mq?.addEventListener?.('change', apply);
+    return () => {
+      unsub();
+      clearInterval(tick);
+      mq?.removeEventListener?.('change', apply);
+    };
+  }, [theme, now]);
   return null;
 }
 

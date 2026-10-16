@@ -1,59 +1,155 @@
-/* Design tokens — pasted verbatim from docs/design.md §4. Edit there first. */
-:root, [data-theme="dark"] {
-  color-scheme: dark;
-  --bg: #0f1115;        --surface: #181b22;   --surface-2: #232733;
-  --text: #f2f4f8;      --text-muted: #aeb6c4;
-  --border: #7a8396;    /* control outlines: ≥3:1 */
-  --divider: #2a2f3a;   /* decorative only, never the sole boundary of a control */
-  --accent: #ffb547;    --on-accent: #1a1206; --accent-text: #ffc46b;
-  --danger: #ff8a80;    --on-danger: #1f0705; --danger-bg: #3a1715;
-  --ok: #6fdc8c;        --ok-bg: #16301f;
-  --warn: #ffd166;      --warn-bg: #33290f;
-  --info: #9cc2ff;      --focus: #9cc2ff;
-  --scrim: rgb(0 0 0 / 0.6);
-  --shadow-1: 0 0 0 1px var(--divider);
-  --shadow-2: 0 8px 24px rgb(0 0 0 / 0.5), 0 0 0 1px var(--divider);
+/* Design tokens: the "Awake" language (docs/design-language.md). Edit the doc first.
+   --wake (0–1) drives weight, width, colour temperature and contrast. data-theme picks the colour regime
+   (dark = night, light = day); inside a regime colours interpolate between the *0 and *1 endpoints.
+   Endpoint pairs are contrast-checked by scripts/check-contrast.mjs. */
+@font-face {
+  font-family: 'Bricolage Grotesque'; font-style: normal; font-weight: 200 800; font-stretch: 75% 100%; font-display: block;
+  src: url(./fonts/bricolage-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
-[data-theme="light"] {
-  color-scheme: light;
-  --bg: #f7f5f0;        --surface: #ffffff;   --surface-2: #ece8de;
-  --text: #1b1d22;      --text-muted: #4f5562;
-  --border: #767264;    --divider: #dcd7cb;
-  --accent: #a34f00;    --on-accent: #ffffff; --accent-text: #8f4500;
-  --danger: #b3261e;    --on-danger: #ffffff; --danger-bg: #fbe4e1;
-  --ok: #1d6b35;        --ok-bg: #e3f3e7;
-  --warn: #7a5000;      --warn-bg: #fbf0d6;
-  --info: #1f5fbf;      --focus: #1f5fbf;
-  --scrim: rgb(0 0 0 / 0.4);
-  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.08), 0 1px 3px rgb(0 0 0 / 0.06);
-  --shadow-2: 0 8px 24px rgb(0 0 0 / 0.16);
+@font-face {
+  font-family: 'Bricolage Grotesque'; font-style: normal; font-weight: 200 800; font-stretch: 75% 100%; font-display: block;
+  src: url(./fonts/bricolage-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
+@font-face {
+  font-family: 'Fraunces'; font-style: normal; font-weight: 100 900; font-display: block;
+  src: url(./fonts/fraunces-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Fraunces'; font-style: normal; font-weight: 100 900; font-display: block;
+  src: url(./fonts/fraunces-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@property --wake { syntax: '<number>'; inherits: true; initial-value: 0.6; }
+
+/* ── Colour endpoints. Night: *0 = wake 0, *1 = wake 0.5. Day: *0 = wake 0.5, *1 = wake 1. ── */
 :root {
-  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --n0-bg: #0c0a09;      --n1-bg: #15110f;
+  --n0-surface: #1a1613; --n1-surface: #241e1a;
+  --n0-surface-2: #241e1a; --n1-surface-2: #2f2722;
+  --n0-text: #cbbfb2;    --n1-text: #f4ece3;
+  --n0-muted: #a39587;   --n1-muted: #c2b5a7;
+  --n0-rule: #2b2420;    --n1-rule: #3a312b;
+  --n0-border: #85776a;  --n1-border: #9a8b7d;
+  --n0-accent: #d4903f;  --n1-accent: #ff9e5e;
+  --n0-accent-text: #dfa25a; --n1-accent-text: #ffb27f;
+
+  --d0-bg: #efe7db;      --d1-bg: #fffaf2;
+  --d0-surface: #f8f2e9; --d1-surface: #ffffff;
+  --d0-surface-2: #e6dccd; --d1-surface-2: #f3ebdf;
+  --d0-text: #2b221c;    --d1-text: #15100c;
+  --d0-muted: #5c4f45;   --d1-muted: #5a4c41;
+  --d0-rule: #d6cabb;    --d1-rule: #e6dccf;
+  --d0-border: #807060;  --d1-border: #85735f;
+  --d0-accent: #a8481c;  --d1-accent: #c2361a;
+  --d0-accent-text: #964016; --d1-accent-text: #ad2f16;
+
+  --signal: #ff5b37;     --on-signal: #1c0b05;   --signal-muted: #4a1a0c;
+  --signal-surface: #ffe3da; --signal-surface-2: #ffd2c4;
+}
+
+:root:not([data-theme="light"]) {
+  color-scheme: dark;
+  --t: clamp(0, var(--wake) * 2, 1);
+  --bg: var(--n1-bg); --surface: var(--n1-surface); --surface-2: var(--n1-surface-2);
+  --text: var(--n1-text); --text-muted: var(--n1-muted); --divider: var(--n1-rule); --rule: var(--n1-rule);
+  --border: var(--n1-border); --accent: var(--n1-accent); --accent-text: var(--n1-accent-text);
+  --on-accent: #160c05;
+  --danger: #ff8f80;  --on-danger: #1f0705; --danger-bg: #3a1715;
+  --ok: #7bd896;      --ok-bg: #16301f;
+  --warn: #f2c96b;    --warn-bg: #33290f;
+  --info: #a9c4f5;    --focus: #a9c4f5;
+  --scrim: rgb(0 0 0 / 0.65);
+  --shadow-1: none;
+  --shadow-2: 0 12px 32px rgb(0 0 0 / 0.55), 0 0 0 1px var(--rule);
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --t: clamp(0, (var(--wake) - 0.5) * 2, 1);
+  --bg: var(--d1-bg); --surface: var(--d1-surface); --surface-2: var(--d1-surface-2);
+  --text: var(--d1-text); --text-muted: var(--d1-muted); --divider: var(--d1-rule); --rule: var(--d1-rule);
+  --border: var(--d1-border); --accent: var(--d1-accent); --accent-text: var(--d1-accent-text);
+  --on-accent: #ffffff;
+  --danger: #b3261e;  --on-danger: #ffffff; --danger-bg: #fbe4e1;
+  --ok: #1f6b37;      --ok-bg: #e3f3e7;
+  --warn: #7a5200;    --warn-bg: #fbf0d6;
+  --info: #2457a8;    --focus: #2457a8;
+  --scrim: rgb(20 12 6 / 0.45);
+  --shadow-1: none;
+  --shadow-2: 0 12px 32px rgb(60 30 10 / 0.18), 0 0 0 1px var(--rule);
+}
+/* Older WebViews without color-mix keep the *1 endpoints above. */
+@supports (color: color-mix(in oklab, red, blue)) {
+  :root:not([data-theme="light"]) {
+    --bg: color-mix(in oklab, var(--n0-bg), var(--n1-bg) calc(var(--t) * 100%));
+    --surface: color-mix(in oklab, var(--n0-surface), var(--n1-surface) calc(var(--t) * 100%));
+    --surface-2: color-mix(in oklab, var(--n0-surface-2), var(--n1-surface-2) calc(var(--t) * 100%));
+    --text: color-mix(in oklab, var(--n0-text), var(--n1-text) calc(var(--t) * 100%));
+    --text-muted: color-mix(in oklab, var(--n0-muted), var(--n1-muted) calc(var(--t) * 100%));
+    --rule: color-mix(in oklab, var(--n0-rule), var(--n1-rule) calc(var(--t) * 100%)); --divider: var(--rule);
+    --border: color-mix(in oklab, var(--n0-border), var(--n1-border) calc(var(--t) * 100%));
+    --accent: color-mix(in oklab, var(--n0-accent), var(--n1-accent) calc(var(--t) * 100%));
+    --accent-text: color-mix(in oklab, var(--n0-accent-text), var(--n1-accent-text) calc(var(--t) * 100%));
+  }
+  :root[data-theme="light"] {
+    --bg: color-mix(in oklab, var(--d0-bg), var(--d1-bg) calc(var(--t) * 100%));
+    --surface: color-mix(in oklab, var(--d0-surface), var(--d1-surface) calc(var(--t) * 100%));
+    --surface-2: color-mix(in oklab, var(--d0-surface-2), var(--d1-surface-2) calc(var(--t) * 100%));
+    --text: color-mix(in oklab, var(--d0-text), var(--d1-text) calc(var(--t) * 100%));
+    --text-muted: color-mix(in oklab, var(--d0-muted), var(--d1-muted) calc(var(--t) * 100%));
+    --rule: color-mix(in oklab, var(--d0-rule), var(--d1-rule) calc(var(--t) * 100%)); --divider: var(--rule);
+    --border: color-mix(in oklab, var(--d0-border), var(--d1-border) calc(var(--t) * 100%));
+    --accent: color-mix(in oklab, var(--d0-accent), var(--d1-accent) calc(var(--t) * 100%));
+    --accent-text: color-mix(in oklab, var(--d0-accent-text), var(--d1-accent-text) calc(var(--t) * 100%));
+  }
+}
+
+:root {
+  --wake: 0.6;
+  --font-sans: 'Bricolage Grotesque', system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --font-promise: 'Fraunces', Georgia, "Noto Serif", serif;
   /* rem-based so the Android font scale applies; layouts must work at 200% */
-  --fs-sm: 0.9375rem;  /* 15px, secondary/meta only */
-  --fs-body: 1.0625rem;/* 17px */
+  --fs-sm: 0.9375rem;  /* 15 */
+  --fs-body: 1.0625rem;/* 17 */
   --fs-lg: 1.25rem;    /* 20 */
   --fs-xl: 1.5rem;     /* 24 */
   --fs-2xl: 2rem;      /* 32 */
-  --fs-3xl: 2.75rem;   /* 44: card time, math problem */
-  --fs-clock-hero: 4rem;                      /* 64: editor steppers */
-  --fs-clock-ring: clamp(5rem, 26vw, 8rem);   /* 80–128: ringing clock */
-  --lh-tight: 1.15; --lh-body: 1.5;
-  --fw-regular: 400; --fw-medium: 500; --fw-bold: 700; --fw-clock: 300;
+  --fs-3xl: 2.75rem;   /* 44 */
+  --fs-promise: 1.5rem;                       /* 24: sentence editor, 48 px line box */
+  --fs-clock-hero: 4rem;                      /* 64 */
+  --fs-clock-ring: clamp(5.5rem, 30vw, 9rem); /* ringing clock */
+  --lh-tight: 1.1; --lh-body: 1.5;
+  /* Weights follow --wake (design-language.md §1.2). */
+  --w-body: calc(300 + var(--wake) * 150);
+  --w-strong: calc(500 + var(--wake) * 260);
+  --w-clock: calc(200 + var(--wake) * 600);
+  --w-promise: calc(300 + var(--wake) * 340);
+  --wd: calc(82% + var(--wake) * 18%);
+  --soft: calc(100 - var(--wake) * 100);
+  --fw-regular: var(--w-body); --fw-medium: calc(var(--w-body) + 100); --fw-bold: var(--w-strong); --fw-clock: var(--w-clock);
   --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
-  --r-sm: 8px; --r-md: 12px; --r-lg: 20px; --r-pill: 999px;
+  --r-sm: 4px; --r-md: 6px; --r-lg: 10px; --r-pill: 999px;
   --tap-min: 48px; --tap-ring: 64px; --tap-ring-primary: 72px;
-  --dur-fast: 120ms; --dur-med: 200ms; --dur-slow: 320ms;
+  --dur-fast: 120ms; --dur-med: 200ms; --dur-slow: 320ms; --dur-wake: 900ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --focus-ring: 0 0 0 2px var(--bg), 0 0 0 5px var(--focus);
+  transition: --wake var(--dur-wake) var(--ease);
 }
-body { margin: 0; background: var(--bg); color: var(--text); font: var(--fw-regular) var(--fs-body)/var(--lh-body) var(--font-sans);
-       -webkit-tap-highlight-color: transparent; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font-family: var(--font-sans); font-size: var(--fs-body); line-height: var(--lh-body);
+  font-weight: var(--w-body); font-stretch: var(--wd);
+  -webkit-tap-highlight-color: transparent;
+  /* No colour transition: a regime switch crossfading through mid-grey would fail contrast mid-way. */
+}
 .tabular, time, [data-clock] { font-variant-numeric: tabular-nums; }
 :focus { outline: none; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: inherit; }
 @media (prefers-reduced-motion: reduce) {
+  :root { transition: none; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
                            transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }

@@ -6,6 +6,7 @@ import { announce } from '../components/feedback';
 import { useNow, useRingManager, useUse24h } from '../context';
 import { formatClockCountdown, formatInstantTime } from '../format';
 import { navigate } from '../router';
+import { WAKE, useWake } from '../wake';
 
 export function SnoozedScreen() {
   const mgr = useRingManager();
@@ -13,6 +14,7 @@ export function SnoozedScreen() {
   const t = useNow(1000);
   const ring = mgr.getRing();
   const snoozed = ring?.state === 'snoozed' && ring.snoozeUntil != null ? ring : null;
+  useWake(WAKE.snoozed);
 
   useEffect(() => {
     if (snoozed?.snoozeUntil) announce(`Snoozed. Rings again at ${formatInstantTime(snoozed.snoozeUntil, use24h)}.`, 'polite');

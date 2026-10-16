@@ -6,6 +6,7 @@ import { Screen } from '../components/layout';
 import { useApp, useRingManager, useService } from '../context';
 import { fallbackDescription } from '../format';
 import { navigate } from '../router';
+import { WAKE, useWake } from '../wake';
 
 export function FallbackScreen() {
   const { now } = useApp();
@@ -14,6 +15,7 @@ export function FallbackScreen() {
   const ctrl = mgr.getController();
   const session = mgr.getSession();
   const settings = service.getSettings();
+  useWake(WAKE.fallback);
   useEffect(() => {
     if (!ctrl || !session || session.phase !== 'solving') navigate('/ring', { replace: true });
   }, [ctrl, session?.phase]);

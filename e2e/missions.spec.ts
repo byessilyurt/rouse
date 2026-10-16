@@ -1,6 +1,6 @@
 /** Plan §4.2 scenarios 7, 8, 9: fallback after wrong QR scans, QR register/test/mismatch, motion missions. */
 import { test, expect, type Page } from '@playwright/test';
-import { inspect, injectScan, makeAlarm, math, open, ringNow, seed, solveMath } from './helpers';
+import { closeSheet, inspect, injectScan, makeAlarm, math, open, openBlank, ringNow, seed, solveMath } from './helpers';
 
 const QR = { type: 'qr' as const, expectedCode: 'ROUSE-SINK-7f3a', label: 'Bathroom sink' };
 
@@ -39,6 +39,7 @@ test('8 · register a QR code, test it, then ring: mismatch and success', async 
   await seed(page);
   await open(page);
   await page.getByRole('button', { name: 'Create your first alarm' }).click();
+  await openBlank(page, 'Missions');
   await page.getByRole('button', { name: 'Remove Math' }).click();
   await page.getByRole('button', { name: 'Add mission' }).click();
   await page.getByTestId('tile-qr').click();
@@ -61,6 +62,7 @@ test('8 · register a QR code, test it, then ring: mismatch and success', async 
   await page.getByRole('button', { name: 'Done' }).click();
   await page.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByTestId('mission-row')).toContainText('Bathroom sink');
+  await closeSheet(page);
   await page.getByRole('button', { name: 'Save alarm' }).click();
   await expect(page).toHaveURL(/#\/alarms$/);
 
