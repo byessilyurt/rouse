@@ -174,7 +174,8 @@ describe('Repository', () => {
     expect(ids[0]).toBe('r5');
     repo.clearWakeRecords();
     expect(repo.getWakeRecords()).toEqual([]);
-  });
+    // ~1000 full-state writes: seconds on slower machines under a parallel run (the app adds one record a day).
+  }, 30_000);
 
   it('persists, validates and clears ring progress', () => {
     const storage = new MemoryStorage();
