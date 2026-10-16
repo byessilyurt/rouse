@@ -170,7 +170,7 @@ export function HealthScreen() {
           />
         ))}
         <CheckRow
-          status={web ? 'unsupported' : health?.manufacturer && ['xiaomi', 'huawei', 'samsung', 'oneplus', 'oppo', 'vivo', 'realme', 'meizu', 'asus', 'honor'].includes(health.manufacturer) ? 'warn' : 'ok'}
+          status={web ? 'unsupported' : health?.manufacturer && ['xiaomi', 'huawei', 'samsung', 'oneplus', 'oppo', 'vivo', 'realme', 'meizu', 'asus', 'honor', 'motorola', 'sony', 'lenovo'].includes(health.manufacturer) ? 'warn' : 'ok'}
           title="Phone maker"
           detail={
             web
