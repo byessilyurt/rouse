@@ -6,7 +6,7 @@ requirements in `design.md` still apply unless this document says otherwise.
 Three ideas, used together:
 
 1. **The interface wakes up.** One number, `wake` (0–1), drives type weight and width, colour temperature,
-   contrast and motion everywhere. The app is thin, narrow and warm at 2 AM, and heavy, wide and bright while it rings.
+   contrast and motion everywhere. The app is thin, narrow and moonlit at 2 AM, and heavy, wide and bright while it rings.
 2. **Alarms are promises.** Each alarm is a short sentence you edit by tapping its words. The ring screen reads your
    promise back to you, and finishing the mission is keeping your word.
 3. **Time is the layout.** Home is a vertical scale of the next 24 hours. Height on screen is real time, so "rings in
@@ -44,14 +44,14 @@ check), and these ideas make that visible instead of decorating it.
 | Type width (`wdth`) | 82 % | 100 % |
 | Promise type (Fraunces) weight | 300 | 640 |
 | Promise type softness (`SOFT`) | 100 | 0 |
-| Accent | dim amber (about 2700 K) | vermilion |
-| Surface | warm black | warm paper (light regime) |
+| Accent | dim lavender (moonlight) | electric ultramarine; acid lime on the ring screen |
+| Surface | violet-black | cool white (light regime) |
 
 **Two colour regimes, never a crossfade through grey.** Interpolating a dark theme into a light one passes
 through mid-grey, where text fails contrast. So colour has two regimes:
 
-- **Night** (`wake` < 0.5): warm black surfaces and light text. Inside the regime, text and accent brighten with `wake`.
-- **Day** (`wake` ≥ 0.5): paper surfaces and dark text. Inside the regime, the paper warms to white and the accent deepens.
+- **Night** (`wake` < 0.5): violet-black surfaces and light text. Inside the regime, text and accent brighten with `wake`.
+- **Day** (`wake` ≥ 0.5): cool white surfaces and dark text. Inside the regime, the surface brightens to white and the accent deepens.
 
 The switch is instant: a cross-fade would pass through mid-grey too. Every colour pair is checked at both ends of each regime
 (`scripts/check-contrast.mjs`): body text 4.5:1, large text and controls 3:1.
@@ -63,6 +63,9 @@ regime; type weight, width and accent still follow `wake`. Only **Follow the day
 screen into the signal page; Dark and System (when the OS is dark) ring in the dark regime at full `wake`.
 
 ---
+
+**Palette rule:** no orange, amber or cream anywhere; that combination reads as another brand. Night is lavender on
+violet-black, day is ultramarine on cool white, and the ring signal is acid lime with near-black text.
 
 ## 2. Type
 

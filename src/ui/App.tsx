@@ -237,7 +237,7 @@ function ThemeSync() {
       const resolved =
         theme === 'wake' ? (wake >= 0.5 ? 'light' : 'dark') : theme === 'system' ? (mq?.matches === false ? 'light' : 'dark') : theme;
       root.setAttribute('data-theme', resolved);
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(root).getPropertyValue('--bg').trim() || (resolved === 'light' ? '#fffaf2' : '#15110f'));
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', getComputedStyle(root).getPropertyValue('--bg').trim() || (resolved === 'light' ? '#fafbfd' : '#101018'));
     };
     apply();
     const unsub = subscribeWake(apply);

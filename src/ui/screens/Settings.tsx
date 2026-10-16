@@ -144,7 +144,7 @@ export function SettingsScreen() {
             value={s.theme}
             onChange={(theme) => update({ theme: theme as Settings['theme'] })}
           />
-          <p class="muted small">Follow the day: dim and warm at night, bright and bold when it rings.</p>
+          <p class="muted small">Follow the day: dim and soft at night, bright and bold when it rings.</p>
         </div>
         <Toggle checked={use24h} onChange={(v) => update({ clockFormat: v ? '24h' : '12h' })} label="24-hour clock" />
         <div class="field">

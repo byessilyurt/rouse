@@ -40,7 +40,7 @@ const PAIRS = [
   ['accent-text', 'bg', 4.5], ['accent-text', 'surface', 4.5],
   ['accent', 'bg', 3], ['border', 'bg', 3], ['border', 'surface', 3],
 ];
-const ON_ACCENT = { n: '#160c05', d: '#ffffff' };
+const ON_ACCENT = { n: '#0c0a24', d: '#ffffff' };
 const failures = [];
 for (const regime of ['n', 'd']) {
   for (const t of [0, 0.25, 0.5, 0.75, 1]) {
@@ -59,7 +59,7 @@ for (const regime of ['n', 'd']) {
   }
 }
 // Ring screen (data-signal): signal page, its surfaces, and day-regime status colours used in banners there.
-const DAY_STATUS = { info: '#2457a8', warn: '#7a5200', danger: '#b3261e' };
+const DAY_STATUS = { info: '#2457a8', warn: '#645600', danger: '#b3261e' };
 for (const [name, c] of Object.entries(DAY_STATUS)) {
   for (const bg of ['signal-surface', 'signal-surface-2']) {
     const r = ratio(hex(c), hex(tok[bg]));

@@ -27,28 +27,28 @@
 
 /* ── Colour endpoints. Night: *0 = wake 0, *1 = wake 0.5. Day: *0 = wake 0.5, *1 = wake 1. ── */
 :root {
-  --n0-bg: #0c0a09;      --n1-bg: #15110f;
-  --n0-surface: #1a1613; --n1-surface: #241e1a;
-  --n0-surface-2: #241e1a; --n1-surface-2: #2f2722;
-  --n0-text: #cbbfb2;    --n1-text: #f4ece3;
-  --n0-muted: #a39587;   --n1-muted: #c2b5a7;
-  --n0-rule: #2b2420;    --n1-rule: #3a312b;
-  --n0-border: #85776a;  --n1-border: #9a8b7d;
-  --n0-accent: #d4903f;  --n1-accent: #ff9e5e;
-  --n0-accent-text: #dfa25a; --n1-accent-text: #ffb27f;
+  --n0-bg: #09090e;      --n1-bg: #101018;
+  --n0-surface: #15151e; --n1-surface: #1d1d29;
+  --n0-surface-2: #1f1f2b; --n1-surface-2: #292937;
+  --n0-text: #bebdcf;    --n1-text: #f0f0f8;
+  --n0-muted: #9493aa;   --n1-muted: #b6b5ca;
+  --n0-rule: #23232f;    --n1-rule: #31313f;
+  --n0-border: #75748e;  --n1-border: #8f8ea8;
+  --n0-accent: #8e80f0;  --n1-accent: #b2a6ff;
+  --n0-accent-text: #a497ff; --n1-accent-text: #c6bcff;
 
-  --d0-bg: #efe7db;      --d1-bg: #fffaf2;
-  --d0-surface: #f8f2e9; --d1-surface: #ffffff;
-  --d0-surface-2: #e6dccd; --d1-surface-2: #f3ebdf;
-  --d0-text: #2b221c;    --d1-text: #15100c;
-  --d0-muted: #5c4f45;   --d1-muted: #5a4c41;
-  --d0-rule: #d6cabb;    --d1-rule: #e6dccf;
-  --d0-border: #807060;  --d1-border: #85735f;
-  --d0-accent: #a8481c;  --d1-accent: #c2361a;
-  --d0-accent-text: #964016; --d1-accent-text: #ad2f16;
+  --d0-bg: #e9ebf1;      --d1-bg: #fafbfd;
+  --d0-surface: #f3f4f8; --d1-surface: #ffffff;
+  --d0-surface-2: #dcdfe8; --d1-surface-2: #edeff4;
+  --d0-text: #1c1e28;    --d1-text: #0c0d13;
+  --d0-muted: #4d5061;   --d1-muted: #4a4d5c;
+  --d0-rule: #d0d3dd;    --d1-rule: #e2e4ea;
+  --d0-border: #707387;  --d1-border: #737689;
+  --d0-accent: #3a34c4;  --d1-accent: #2b20f0;
+  --d0-accent-text: #332db0; --d1-accent-text: #2419d0;
 
-  --signal: #ff5b37;     --on-signal: #1c0b05;   --signal-muted: #4a1a0c;
-  --signal-surface: #ffe3da; --signal-surface-2: #ffd2c4;
+  --signal: #c8ff2e;     --on-signal: #0b0d05;   --signal-muted: #33400c;
+  --signal-surface: #ecffbd; --signal-surface-2: #ddff8f;
 }
 
 :root:not([data-theme="light"]) {
@@ -57,10 +57,10 @@
   --bg: var(--n1-bg); --surface: var(--n1-surface); --surface-2: var(--n1-surface-2);
   --text: var(--n1-text); --text-muted: var(--n1-muted); --divider: var(--n1-rule); --rule: var(--n1-rule);
   --border: var(--n1-border); --accent: var(--n1-accent); --accent-text: var(--n1-accent-text);
-  --on-accent: #160c05;
-  --danger: #ff8f80;  --on-danger: #1f0705; --danger-bg: #3a1715;
+  --on-accent: #0c0a24;
+  --danger: #ff8a9a;  --on-danger: #200610; --danger-bg: #3a1520;
   --ok: #7bd896;      --ok-bg: #16301f;
-  --warn: #f2c96b;    --warn-bg: #33290f;
+  --warn: #ecd75a;    --warn-bg: #2e2b0c;
   --info: #a9c4f5;    --focus: #a9c4f5;
   --scrim: rgb(0 0 0 / 0.65);
   --shadow-1: none;
@@ -75,11 +75,11 @@
   --on-accent: #ffffff;
   --danger: #b3261e;  --on-danger: #ffffff; --danger-bg: #fbe4e1;
   --ok: #1f6b37;      --ok-bg: #e3f3e7;
-  --warn: #7a5200;    --warn-bg: #fbf0d6;
+  --warn: #645600;    --warn-bg: #f6f1cf;
   --info: #2457a8;    --focus: #2457a8;
-  --scrim: rgb(20 12 6 / 0.45);
+  --scrim: rgb(10 10 25 / 0.45);
   --shadow-1: none;
-  --shadow-2: 0 12px 32px rgb(60 30 10 / 0.18), 0 0 0 1px var(--rule);
+  --shadow-2: 0 12px 32px rgb(20 20 60 / 0.16), 0 0 0 1px var(--rule);
 }
 /* Older WebViews without color-mix keep the *1 endpoints above. */
 @supports (color: color-mix(in oklab, red, blue)) {
