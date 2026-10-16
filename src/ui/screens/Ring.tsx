@@ -6,10 +6,10 @@ import { Banner, Screen, Spinner } from '../components/layout';
 import { announce } from '../components/feedback';
 import { useApp, useNow, useRingManager, useUse24h } from '../context';
 import { formatFullDate, missionProseName, timeParts } from '../format';
-import { navigate } from '../router';
+import { goBack, navigate } from '../router';
 
 export function RingScreen() {
-  const { now } = useApp();
+  const { now, backend } = useApp();
   const mgr = useRingManager();
   const use24h = useUse24h();
   const t = useNow(1000);
@@ -42,11 +42,26 @@ export function RingScreen() {
     return (
       <Screen title={waitingForTest ? 'Test alarm' : 'Alarm'} chrome="locked">
         {waitingForTest ? (
-          <Spinner label="Starting test…" />
+          <>
+            <Spinner label="Starting test…" />
+            <Button
+              variant="secondary"
+              size="ring"
+              block
+              icon="x"
+              onClick={() => {
+                mgr.testPendingSince = null;
+                void backend.cancelTest().catch(() => undefined);
+                goBack('/alarms');
+              }}
+            >
+              Cancel test
+            </Button>
+          </>
         ) : (
           <>
             <p>No alarm is ringing.</p>
-            <Button variant="primary" block onClick={() => navigate('/alarms', { replace: true })}>
+            <Button variant="primary" size="ring" block onClick={() => navigate('/alarms', { replace: true })}>
               Go to alarms
             </Button>
           </>

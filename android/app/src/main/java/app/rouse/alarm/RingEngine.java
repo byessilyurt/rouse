@@ -492,6 +492,42 @@ public final class RingEngine {
         return fireAt;
     }
 
+    /** { "fireAt": ms | null }: the test ring that has not fired yet. One older than the grace period reads as none. */
+    public JSONObject getPendingTest() throws JSONException {
+        JSONObject pending = mirror.pendingTest();
+        long at = pending == null ? 0L : pending.optLong("fireAt", 0L);
+        boolean live = pending != null && at > 0L && now() - at <= RouseConstants.MISSED_GRACE_MS;
+        JSONObject out = new JSONObject();
+        out.put("fireAt", live ? (Object) at : JSONObject.NULL);
+        return out;
+    }
+
+    /**
+     * Cancel a pending test and end a running test ring the way dismiss does for tests: no log events,
+     * no wake check, volume restored (D-030, D-053). A real episode is never touched.
+     */
+    public void cancelTest() {
+        scheduler.cancel(RouseConstants.RC_TEST);
+        boolean hadPending = mirror.pendingTest() != null;
+        mirror.setPendingTest(null);
+        Episode e = episodes.get();
+        boolean endedRing = false;
+        if (e != null && e.isTest) {
+            try {
+                dismiss(e.sessionId, "no-mission");
+            } catch (RouseError ex) {
+                // Not ringing/snoozed (should not happen for a test): drop it so nothing is left audible.
+                DiagLog.w("engine", "test episode in " + e.state + "; clearing");
+                scheduler.cancel(RouseConstants.RC_SAFETY);
+                stopRingService();
+                clearEpisode();
+                emitRingState(null);
+            }
+            endedRing = true;
+        }
+        DiagLog.i("engine", "test cancelled pending=" + hadPending + " ring=" + endedRing);
+    }
+
     public void missionUiReady(String sessionId) throws RouseError {
         Episode e = requireEpisode(sessionId, Episode.STATE_RINGING, Episode.STATE_SNOOZED);
         // Snoozed ("I'm up — turn it off", design §3.9): nothing rings, no readiness timer to cancel.

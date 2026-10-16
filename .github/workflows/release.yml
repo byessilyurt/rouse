@@ -1,0 +1,73 @@
+name: Release
+
+# Builds the debug-signed APK and publishes it as a GitHub Release.
+#  - Push a tag like v0.1.0           -> build, then create the Release with the APK attached.
+#  - Run manually (workflow_dispatch) -> build, then upload the APK as a workflow artifact only.
+#    (Manual runs from a tag ref also publish, because GITHUB_REF_TYPE is "tag".)
+# The Android SDK is the one preinstalled on ubuntu-latest (D-006); do not add setup-android.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    name: Build debug APK and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Use the runner's preinstalled Android SDK
+        run: echo "ANDROID_HOME=${ANDROID_HOME:-/usr/local/lib/android/sdk}" >> "$GITHUB_ENV"
+      - run: npm ci
+      - run: npm run build
+      - run: npx cap sync android
+      - name: Assemble debug APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug
+      - name: Name the APK
+        id: apk
+        run: |
+          set -euo pipefail
+          SRC=$(ls android/app/build/outputs/apk/debug/*.apk | head -n 1)
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            TAG="$GITHUB_REF_NAME"
+          else
+            TAG="dev-$(git rev-parse --short HEAD)"
+          fi
+          OUT="rouse-${TAG}-debug.apk"
+          cp "$SRC" "$OUT"
+          echo "path=$OUT" >> "$GITHUB_OUTPUT"
+          echo "Built $OUT"
+      - name: Publish GitHub Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APK: ${{ steps.apk.outputs.path }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$APK" \
+            --title "Rouse $GITHUB_REF_NAME" \
+            --generate-notes \
+            --notes "Debug-signed Android build. Android may ask you to allow installs from unknown sources. Updating from a build signed with a different key requires uninstalling first. After installing, open Reliability in the app and run a test alarm. See the README for install steps and limitations."
+      - name: Upload APK as artifact (manual run without a tag)
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rouse-debug-apk
+          path: ${{ steps.apk.outputs.path }}
+          retention-days: 30

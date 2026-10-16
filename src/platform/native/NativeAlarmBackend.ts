@@ -21,6 +21,7 @@ import type {
 } from '../AlarmBackend';
 import type { Alarm, EpochMs, NextFire, Settings, SoundRef } from '../../core/types';
 import { MAX_SILENCE_LEASE_MS, NATIVE_MIRROR_VERSION } from '../../core/defaults';
+import { formatDiagnostics } from '../diagnostics';
 import { Rouse } from './RousePlugin';
 import type { NativeSettingsMirror } from './RousePlugin';
 
@@ -103,6 +104,15 @@ export function createNativeAlarmBackend(): AlarmBackend {
       return Rouse.testAlarm({ alarm, delaySeconds });
     },
 
+    async getPendingTest(): Promise<{ fireAt: EpochMs } | null> {
+      const fireAt = (await Rouse.getPendingTest()).fireAt;
+      return fireAt == null ? null : { fireAt };
+    },
+
+    cancelTest(): Promise<void> {
+      return Rouse.cancelTest();
+    },
+
     async getActiveRing(): Promise<ActiveRing | null> {
       return (await Rouse.getActiveRing()).ring ?? null;
     },
@@ -155,6 +165,36 @@ export function createNativeAlarmBackend(): AlarmBackend {
 
     deleteCustomSound(id: string): Promise<void> {
       return Rouse.deleteCustomSound({ id });
+    },
+
+    async getDiagnostics(): Promise<string> {
+      // Each source is read on its own: a failing one is reported, the rest still make the report.
+      const unavailable: string[] = [];
+      const read = async <T>(name: string, fn: () => Promise<T>, fallback: T): Promise<T> => {
+        try {
+          return await fn();
+        } catch {
+          unavailable.push(name);
+          return fallback;
+        }
+      };
+      const [health, next, pending, ring, lines] = await Promise.all([
+        read<HealthStatus | null>('health', () => Rouse.getHealth(), null),
+        read<NextFire | null>('scheduled', () => backend.getNextFire(), null),
+        read<{ fireAt: EpochMs } | null>('pending test', () => backend.getPendingTest(), null),
+        read<ActiveRing | null>('episode', () => backend.getActiveRing(), null),
+        read<string[]>('log', () => getNativeDiagnostics(), []),
+      ]);
+      return formatDiagnostics({
+        platform: 'android',
+        generatedAt: Date.now(),
+        health,
+        next,
+        ring,
+        pendingTestAt: pending?.fireAt ?? null,
+        lines,
+        unavailable,
+      });
     },
 
     subscribe(listener: BackendListener): () => void {

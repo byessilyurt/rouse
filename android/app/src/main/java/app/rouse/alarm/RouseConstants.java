@@ -16,6 +16,7 @@ public final class RouseConstants {
     public static final long MISSED_GRACE_MS = 30L * 60_000L;
     public static final long DEFERRED_START_DELAY_MS = 5_000L;
     public static final int WAKE_CHECK_MAX_RERINGS = 2;
+    public static final long CALL_MODE_CAP_MS = 10L * 60_000L;
     public static final int NATIVE_FALLBACK_PROBLEMS = 5;
     public static final int NATIVE_LOG_CAP = 500;
     public static final long MAX_CUSTOM_SOUND_BYTES = 20L * 1024L * 1024L;

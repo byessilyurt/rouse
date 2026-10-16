@@ -88,6 +88,8 @@ export const MISSED_GRACE_MS = 30 * 60_000;
 export const DEFERRED_START_DELAY_MS = 5_000;
 /** Max wake-check re-rings per episode; after that the episode ends with wakeCheck='failed'. [JAVA] */
 export const WAKE_CHECK_MAX_RERINGS = 2;
+/** A call/VoIP audio mode (IN_CALL / IN_COMMUNICATION) that lasts longer than this while ringing no longer holds the alarm silent (D-049). [JAVA] */
+export const CALL_MODE_CAP_MS = 10 * 60_000;
 /** Native fallback (WebView dead): number of math problems, two-digit × one-digit + two-digit. [JAVA] */
 export const NATIVE_FALLBACK_PROBLEMS = 5;
 /** Native log (AlarmLogEvent queue) cap; oldest acked-or-not events dropped first. [JAVA] */

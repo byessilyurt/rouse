@@ -228,6 +228,14 @@ export interface AlarmBackend {
 
   /** Ring `alarm` (need not be saved) in `delaySeconds` (1..3600) as a test: no log events, no stats. */
   testAlarm(alarm: Alarm, delaySeconds: number): Promise<{ fireAt: EpochMs }>;
+  /** The test ring scheduled by testAlarm that has not fired yet, or null (also null once it is ringing). */
+  getPendingTest(): Promise<{ fireAt: EpochMs } | null>;
+  /**
+   * Cancel the pending test ring. If a test ring is ringing (or snoozed) right now, end it cleanly:
+   * same semantics as dismissing it (no log events, no stats, no wake check; D-030, D-053). Never touches a
+   * real episode. Resolves even when there is nothing to cancel.
+   */
+  cancelTest(): Promise<void>;
 
   // ── Ring session ──────────────────────────────────────────────────────────
   /** Current episode (any state) or null. Called on app start to route to #/ring or #/wake-check. */
@@ -260,6 +268,12 @@ export interface AlarmBackend {
   /** Open the system picker; copies the file into app storage. null if the user cancelled. */
   pickCustomSound(): Promise<SoundInfo | null>;
   deleteCustomSound(id: string): Promise<void>;
+
+  /**
+   * Plain-text summary for "Copy diagnostics": platform, health, scheduled state and (native) the
+   * diagnostic ring buffer. Never contains alarm labels, QR codes, phrases or file names.
+   */
+  getDiagnostics(): Promise<string>;
 
   /** Subscribe to live events. Returns an unsubscribe function. */
   subscribe(listener: BackendListener): () => void;

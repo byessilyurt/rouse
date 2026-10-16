@@ -175,7 +175,10 @@ function Routes() {
       // remembered in the scroll listener below
     }
     const t = setTimeout(() => {
-      const el =
+      // A modal that opened since the navigation (e.g. a dialog raised right after a route change) has
+      // already taken focus; moving it to the H1 would drop focus out of the dialog's trap.
+      const modalOpen = document.querySelector('[aria-modal="true"]') !== null;
+      const el = modalOpen ? null :
         document.querySelector<HTMLElement>('[data-initial-focus]') ??
         document.querySelector<HTMLElement>('main h1[tabindex="-1"], header h1[tabindex="-1"]');
       el?.focus({ preventScroll: true });

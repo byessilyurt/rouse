@@ -196,3 +196,29 @@ Verification note: all 29 Java sources compile with `javac -Xlint:all` against h
 **D-068 — Real Android build verified locally.** The reviewer found that dl.google.com and a Google-hosted Maven Central mirror are reachable from this container, which contradicts the assumption in D-003. It ran `assembleDebug lintDebug testDebugUnitTest` for real: BUILD SUCCESSFUL, 0 lint errors, 30/30 JUnit, and the aapt2 permission gate passed. The mirror init script stays in the scratch directory only. No repo build files depend on it. CI remains the source of truth.
 
 **Open, deferred to the gap phase:** D-049 call detection treats a stuck MODE_IN_COMMUNICATION (VoIP) as "in call", which could mean vibrate-only indefinitely. A cap is needed.
+
+## Process
+
+**D-069 — Model allocation for cost (user request).** From the gap-filling phase on, implementation, documentation and audit agents run on Sonnet 5.5 at high effort. Opus is reserved for the hardest reasoning. The orchestrator verifies every Sonnet output independently: it re-runs `npm run check` and the real Gradle build, reviews the diff, and does a separate final verification pass. Quality gates are unchanged.
+
+## Gap filling (Sonnet agents, verified by the orchestrator)
+
+**D-070 — The pending test alarm is backend truth.** `getPendingTest()` and `cancelTest()` were added to AlarmBackend and RousePlugin (additive). The Reliability screen and the editor both read the backend, so the countdown survives screen changes and process death. A cancelled test is never reported as "didn't ring".
+
+**D-071 — Cancelling a running test reuses the dismiss path** with `no-mission`, and only for test episodes. A real episode is never touched. No new log, stats or wake-check paths.
+
+**D-072 — The call-mode hold is capped at 10 minutes** (`CALL_MODE_CAP_MS`, [JAVA]; resolves the open D-049 item). The pure `CallPolicy` is JUnit-tested. A stuck VoIP mode can't silence an alarm for more than 10 minutes. A genuine call longer than 10 minutes gets alarm audio, which is the right trade for an alarm clock.
+
+**D-073 — Diagnostics are plain text from the backend and label-free by construction.** The shared formatter's input type can't carry labels, QR codes or phrases. "Copy diagnostics" on the Reliability screen falls back to a selected textarea if the clipboard is blocked.
+
+Orchestrator review of gap A: I read the `CallPolicy` + `RingService` diff and the `RingEngine.cancelTest` diff. `cancelTest` runs on the state thread through the plugin's `run` wrapper, the same as `dismiss`. The agent's real Gradle build is BUILD SUCCESSFUL (0 lint errors, JUnit 37/37), and `npm run check` passes (330 unit, 27 e2e).
+
+**D-074 — The project moved to github.com/byessilyurt/rouse (user request).** That repo was empty. Its `main` was seeded with the last fully green commit (`f1094d9`; web + Android CI passing), and the later work (gap A, verified, plus gap B in progress) goes through draft PR byessilyurt/rouse#1. Full history is preserved. The old byessilyurt/test-repo#2 has a pointer comment and is no longer updated. Work continues from the existing checkout, which has an extra `rouse` remote, so the running agent isn't disrupted.
+
+**D-075 — Modals make the rest of the page `inert`,** and the focus trap is computed from real tab stops, because `aria-modal` alone isn't honoured everywhere. The route-change focus step skips while a modal is open, which also guards against the settings-import focus race seen once in e2e.
+
+**D-076 — Very large display text (ring clock, alarm times, editor digits) is capped with `vw`** so it never overflows a 360 px screen at 200 % font. All other text reflows at 200 %.
+
+**D-077 — Releases are cut by pushing a `v*` tag.** `release.yml` builds a debug-signed APK and attaches it to a GitHub Release (stated in the README and the release notes). Signing with a real release key is deferred until there's a maintainer keystore.
+
+Orchestrator verification of gap B: `npm run check` passes (330 unit, 27 e2e). `e2e/settings.spec.ts` passes 16/16 with repeat-each. I reviewed `release.yml` and the README. The README is honest that there has been no device testing yet. The accessibility audit (45 scenes × 2 themes × normal and 200 % font, 360 px) is summarised in docs/accessibility.md.
