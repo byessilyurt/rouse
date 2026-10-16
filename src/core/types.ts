@@ -38,7 +38,23 @@ export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
  * scripts/gen-sounds.ts from the recipes in defaults.ts) and is synthesised with
  * WebAudio by the web backend. `classic` doubles as the native BACKUP tone.
  */
-export type BundledSoundId = 'classic' | 'pulse' | 'siren' | 'chime' | 'buzzer' | 'rise';
+export type BundledSoundId =
+  | 'classic'
+  | 'pulse'
+  | 'siren'
+  | 'chime'
+  | 'buzzer'
+  | 'rise'
+  | 'marimba'
+  | 'bells'
+  | 'birds'
+  | 'kalimba'
+  | 'digital'
+  | 'sonar'
+  | 'staircase'
+  | 'bugle'
+  | 'klaxon'
+  | 'firealarm';
 
 /**
  * Reference to the sound an alarm plays.

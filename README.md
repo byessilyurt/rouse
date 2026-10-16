@@ -37,7 +37,7 @@ The app labels the weak ones honestly. Motion missions use the phone's motion se
 **Ringing**
 - Rings on the alarm audio stream, so it ignores the media volume and plays through Do Not Disturb when alarms are allowed (the default).
 - Shows over the lock screen. Back and the volume keys are ignored while it rings, and the alarm volume is held at the level you chose.
-- Gradual volume ramp, vibration, 6 bundled tones plus your own sound. A built-in backup tone plays if a sound can't.
+- Gradual volume ramp, vibration, 16 bundled tones (from gentle marimba and birdsong to klaxon and fire alarm) plus your own sound. A built-in backup tone plays if a sound can't.
 - The sound drops while you're solving a mission and comes back at full volume after 30 s of no touching.
 - Snooze with a length and a count you set (or off). Optionally you must finish the mission to snooze.
 - **Wake-up check:** after you turn the alarm off, Rouse asks "are you awake?" and rings again if you don't answer in time.

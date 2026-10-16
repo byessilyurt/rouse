@@ -49,7 +49,9 @@ export function renderSamples(recipe: ToneRecipe): Int16Array {
       const t = n / SAMPLE_RATE;
       // Phase of a linear sweep: integral of f(t) = f0 + (f1 - f0) * t / dur.
       const cycles = f0 * t + ((f1 - f0) * t * t) / (2 * durS);
-      const env = Math.min(1, n / edge, (len - 1 - n) / edge);
+      // Exponential decay to ~5% (e^-3) after decayMs; the same curve WebAudio's setTargetAtTime gives.
+      const decay = note.decayMs ? Math.exp((-3 * Math.max(0, n - edge)) / ((note.decayMs * SAMPLE_RATE) / 1000)) : 1;
+      const env = Math.min(1, n / edge, (len - 1 - n) / edge) * decay;
       mix[idx] = (mix[idx] ?? 0) + note.gain * Math.max(0, env) * waveAt(note.wave, cycles);
     }
   }

@@ -23,9 +23,17 @@ public final class RouseConstants {
     public static final String BACKUP_SOUND_ID = "classic";
 
     /** BUNDLED_SOUNDS order, ids, names and loop lengths (parity-tested). */
-    public static final String[] BUNDLED_SOUND_IDS = {"classic", "pulse", "siren", "chime", "buzzer", "rise"};
-    public static final String[] BUNDLED_SOUND_NAMES = {"Classic beep", "Pulse", "Siren", "Chime", "Buzzer", "Rise"};
-    public static final long[] BUNDLED_SOUND_LOOP_MS = {1200L, 500L, 1000L, 1200L, 800L, 2000L};
+    public static final String[] BUNDLED_SOUND_IDS = {
+        "classic", "pulse", "siren", "chime", "buzzer", "rise", "marimba", "bells",
+        "birds", "kalimba", "digital", "sonar", "staircase", "bugle", "klaxon", "firealarm"
+    };
+    public static final String[] BUNDLED_SOUND_NAMES = {
+        "Classic beep", "Pulse", "Siren", "Chime", "Buzzer", "Rise", "Marimba", "Morning bells",
+        "Birdsong", "Kalimba", "Digital watch", "Sonar", "Staircase", "Bugle call", "Klaxon", "Fire alarm"
+    };
+    public static final long[] BUNDLED_SOUND_LOOP_MS = {
+        1200L, 500L, 1000L, 1200L, 800L, 2000L, 1600L, 2400L, 2200L, 2000L, 1000L, 2500L, 2400L, 2600L, 1000L, 500L
+    };
 
     // ── Native-only timing ──
     /** Preview auto-stop (RousePlugin.previewSound contract). */

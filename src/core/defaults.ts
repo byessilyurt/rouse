@@ -111,6 +111,8 @@ export interface ToneNote {
   wave: 'sine' | 'square' | 'sawtooth' | 'triangle';
   /** Peak gain 0..1. */
   gain: number;
+  /** If set, the note decays exponentially after its attack, down to ~5% after decayMs (bells, plucks). */
+  decayMs?: number;
 }
 
 /**
@@ -131,6 +133,13 @@ export interface BundledSound {
 
 const beeps = (count: number, onMs: number, offMs: number, freqHz: number, wave: ToneNote['wave'], gain: number): ToneNote[] =>
   Array.from({ length: count }, (_, i) => ({ startMs: i * (onMs + offMs), durMs: onMs, freqHz, wave, gain }));
+
+/** Plucked/struck notes: [startMs, freqHz] pairs with a decay, plus an optional bright partial. */
+const plucks = (seq: [number, number][], durMs: number, decayMs: number, wave: ToneNote['wave'], gain: number, partial?: { ratio: number; gain: number; decayMs: number }): ToneNote[] =>
+  seq.flatMap(([startMs, freqHz]) => [
+    { startMs, durMs, freqHz, wave, gain, decayMs },
+    ...(partial ? [{ startMs, durMs: Math.min(durMs, partial.decayMs * 2), freqHz: freqHz * partial.ratio, wave: 'sine' as const, gain: partial.gain, decayMs: partial.decayMs }] : []),
+  ]);
 
 export const BUNDLED_SOUNDS: readonly BundledSound[] = [
   { id: 'classic', name: 'Classic beep', recipe: { loopMs: 1200, notes: beeps(4, 100, 100, 880, 'square', 0.6) } },
@@ -156,6 +165,89 @@ export const BUNDLED_SOUNDS: readonly BundledSound[] = [
   },
   { id: 'buzzer', name: 'Buzzer', recipe: { loopMs: 800, notes: beeps(1, 600, 0, 220, 'sawtooth', 0.6) } },
   { id: 'rise', name: 'Rise', recipe: { loopMs: 2000, notes: [{ startMs: 0, durMs: 1500, freqHz: 400, freqEndHz: 1600, wave: 'sine', gain: 0.9 }] } },
+  // Gentle
+  {
+    id: 'marimba',
+    name: 'Marimba',
+    recipe: { loopMs: 1600, notes: plucks([[0, 523], [160, 659], [320, 784], [480, 1047], [800, 784]], 600, 450, 'sine', 0.6, { ratio: 4, gain: 0.12, decayMs: 120 }) },
+  },
+  {
+    id: 'bells',
+    name: 'Morning bells',
+    recipe: { loopMs: 2400, notes: plucks([[0, 880], [600, 659], [1200, 784], [1800, 587]], 600, 1100, 'sine', 0.7, { ratio: 2.76, gain: 0.25, decayMs: 300 }) },
+  },
+  {
+    id: 'birds',
+    name: 'Birdsong',
+    recipe: {
+      loopMs: 2200,
+      notes: [
+        ...[0, 110, 220].map((startMs) => ({ startMs, durMs: 70, freqHz: 2600, freqEndHz: 3800, wave: 'sine' as const, gain: 0.55 })),
+        ...[600, 760].map((startMs) => ({ startMs, durMs: 120, freqHz: 3400, freqEndHz: 2200, wave: 'sine' as const, gain: 0.55 })),
+        ...[1200, 1270, 1340, 1410, 1480].map((startMs) => ({ startMs, durMs: 40, freqHz: 3000, freqEndHz: 3600, wave: 'sine' as const, gain: 0.5 })),
+      ],
+    },
+  },
+  {
+    id: 'kalimba',
+    name: 'Kalimba',
+    recipe: { loopMs: 2000, notes: plucks([[0, 587], [250, 698], [500, 880], [750, 1047], [1000, 880], [1250, 1175]], 700, 500, 'triangle', 0.7) },
+  },
+  // Steady
+  { id: 'digital', name: 'Digital watch', recipe: { loopMs: 1000, notes: beeps(2, 70, 50, 2730, 'square', 0.6) } },
+  {
+    id: 'sonar',
+    name: 'Sonar',
+    recipe: { loopMs: 2500, notes: [...plucks([[0, 1250]], 1400, 1100, 'sine', 0.9), ...plucks([[700, 1250]], 1200, 900, 'sine', 0.3)] },
+  },
+  {
+    id: 'staircase',
+    name: 'Staircase',
+    recipe: { loopMs: 2400, notes: [523, 587, 659, 698, 784, 880, 988, 1047].map((freqHz, i) => ({ startMs: i * 220, durMs: 180, freqHz, wave: 'triangle' as const, gain: 0.65 })) },
+  },
+  {
+    id: 'bugle',
+    name: 'Bugle call',
+    recipe: {
+      loopMs: 2600,
+      notes: (
+        [
+          [0, 150, 392],
+          [180, 150, 523],
+          [360, 150, 659],
+          [540, 400, 784],
+          [1000, 150, 659],
+          [1180, 600, 784],
+        ] as const
+      ).flatMap(([startMs, durMs, freqHz]) => [
+        { startMs, durMs, freqHz, wave: 'sawtooth' as const, gain: 0.6 },
+        { startMs, durMs, freqHz: freqHz * 2, wave: 'sine' as const, gain: 0.3 },
+      ]),
+    },
+  },
+  // Harsh
+  {
+    id: 'klaxon',
+    name: 'Klaxon',
+    recipe: {
+      loopMs: 1000,
+      notes: [
+        { startMs: 0, durMs: 600, freqHz: 330, wave: 'square', gain: 0.35 },
+        { startMs: 0, durMs: 600, freqHz: 415, wave: 'square', gain: 0.35 },
+      ],
+    },
+  },
+  {
+    id: 'firealarm',
+    name: 'Fire alarm',
+    recipe: {
+      loopMs: 500,
+      notes: [
+        { startMs: 0, durMs: 250, freqHz: 960, wave: 'square', gain: 0.5 },
+        { startMs: 250, durMs: 250, freqHz: 770, wave: 'square', gain: 0.5 },
+      ],
+    },
+  },
 ];
 
 /** Played natively when the selected sound fails (missing custom file, decoder error). [JAVA] res/raw/rouse_classic.wav */

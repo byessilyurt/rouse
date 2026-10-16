@@ -73,6 +73,26 @@ public final class SoundLibrary {
                 return R.raw.rouse_buzzer;
             case "rise":
                 return R.raw.rouse_rise;
+            case "marimba":
+                return R.raw.rouse_marimba;
+            case "bells":
+                return R.raw.rouse_bells;
+            case "birds":
+                return R.raw.rouse_birds;
+            case "kalimba":
+                return R.raw.rouse_kalimba;
+            case "digital":
+                return R.raw.rouse_digital;
+            case "sonar":
+                return R.raw.rouse_sonar;
+            case "staircase":
+                return R.raw.rouse_staircase;
+            case "bugle":
+                return R.raw.rouse_bugle;
+            case "klaxon":
+                return R.raw.rouse_klaxon;
+            case "firealarm":
+                return R.raw.rouse_firealarm;
             case "classic":
             default:
                 return R.raw.rouse_classic;

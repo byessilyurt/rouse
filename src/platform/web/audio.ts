@@ -59,7 +59,14 @@ function scheduleNote(ctx: Ctx, dest: AudioNode, n: ToneNote, t0: number): void 
   if (n.freqEndHz !== undefined) osc.frequency.linearRampToValueAtTime(n.freqEndHz, start + dur);
   g.gain.setValueAtTime(0, start);
   g.gain.linearRampToValueAtTime(n.gain, start + Math.min(ATTACK, dur / 2));
-  g.gain.setValueAtTime(n.gain, Math.max(start + ATTACK, start + dur - ATTACK));
+  if (n.decayMs) {
+    // Matches gen-sounds.ts: e^-3 (~5%) after decayMs.
+    g.gain.setTargetAtTime(0, start + ATTACK, n.decayMs / 3000);
+    g.gain.cancelScheduledValues(start + dur - ATTACK);
+    g.gain.setValueAtTime(n.gain * Math.exp((-3 * (dur - 2 * ATTACK) * 1000) / n.decayMs), start + dur - ATTACK);
+  } else {
+    g.gain.setValueAtTime(n.gain, Math.max(start + ATTACK, start + dur - ATTACK));
+  }
   g.gain.linearRampToValueAtTime(0, start + dur);
   osc.connect(g).connect(dest);
   osc.start(start);
