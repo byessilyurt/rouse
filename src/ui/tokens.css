@@ -109,6 +109,11 @@
 
 :root {
   --wake: 0.6;
+  /* Capacitor injects --safe-area-inset-* where the WebView's env() is unreliable (SystemBars, insetsHandling 'css'). */
+  --inset-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --inset-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --inset-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --inset-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
   --font-sans: 'Bricolage Grotesque', system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
   --font-promise: 'Fraunces', Georgia, "Noto Serif", serif;
   /* rem-based so the Android font scale applies; layouts must work at 200% */

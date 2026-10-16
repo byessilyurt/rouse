@@ -31,6 +31,7 @@ export function Screen({ title, chrome, onBack, topAction, customHeading, childr
   }, [title]);
   const mainClasses = ['shell-main'];
   if (chrome === 'tabs') mainClasses.push('has-tabs');
+  if (chrome === 'tabs' || chrome === 'none') mainClasses.push('safe-top');
   if (sticky) mainClasses.push('has-sticky');
   if (cls) mainClasses.push(cls);
   return (

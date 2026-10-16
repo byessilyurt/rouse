@@ -34,19 +34,21 @@ img, svg { flex-shrink: 0; }
 .shell { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
 .shell-main {
   flex: 1 0 auto; width: 100%; max-width: 480px; margin: 0 auto;
-  padding: var(--sp-4) max(var(--sp-4), env(safe-area-inset-right)) var(--sp-6) max(var(--sp-4), env(safe-area-inset-left));
+  padding: var(--sp-4) max(var(--sp-4), var(--inset-right)) var(--sp-6) max(var(--sp-4), var(--inset-left));
   display: flex; flex-direction: column; gap: var(--sp-5);
 }
-.shell-main.has-tabs { padding-bottom: calc(64px + var(--sp-8) + var(--sp-6) + env(safe-area-inset-bottom)); }
-.shell-main.has-sticky { padding-bottom: calc(var(--tap-min) + var(--sp-8) + env(safe-area-inset-bottom)); }
+/* Tab and chrome-less screens draw under Android's status bar (edge-to-edge): keep content below it. */
+.shell-main.safe-top { padding-top: max(var(--sp-4), calc(var(--inset-top) + var(--sp-2))); }
+.shell-main.has-tabs { padding-bottom: calc(64px + var(--sp-8) + var(--sp-6) + var(--inset-bottom)); }
+.shell-main.has-sticky { padding-bottom: calc(var(--tap-min) + var(--sp-8) + var(--inset-bottom)); }
 .shell.locked { overscroll-behavior: none; user-select: none; -webkit-user-select: none; }
 .shell.locked .btn-text { min-height: var(--tap-ring); }
-.shell.locked .shell-main { padding-top: max(var(--sp-4), env(safe-area-inset-top)); min-height: 100dvh; }
+.shell.locked .shell-main { padding-top: max(var(--sp-4), var(--inset-top)); min-height: 100dvh; }
 .shell h1[tabindex="-1"]:focus { outline: none; }
 .shell h1[tabindex="-1"]:focus-visible { outline: none; }
 
 .topbar {
-  position: sticky; top: 0; z-index: 20; min-height: 56px; padding-top: env(safe-area-inset-top);
+  position: sticky; top: 0; z-index: 20; min-height: 56px; padding-top: var(--inset-top);
   box-sizing: content-box; background: var(--bg); border-bottom: 1px solid var(--rule);
 }
 .topbar-inner {
@@ -58,7 +60,7 @@ img, svg { flex-shrink: 0; }
 
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--bg);
-  border-top: 1px solid var(--rule); padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--rule); padding-bottom: var(--inset-bottom);
 }
 .tabbar ul { list-style: none; margin: 0 auto; padding: 0; max-width: 480px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .tabbar a {
@@ -105,8 +107,8 @@ img, svg { flex-shrink: 0; }
 .icon-btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
 
 .fab {
-  position: fixed; right: max(var(--sp-4), env(safe-area-inset-right)); z-index: 25;
-  bottom: calc(64px + var(--sp-4) + env(safe-area-inset-bottom)); min-height: 64px; padding: 0 var(--sp-5);
+  position: fixed; right: max(var(--sp-4), var(--inset-right)); z-index: 25;
+  bottom: calc(64px + var(--sp-4) + var(--inset-bottom)); min-height: 64px; padding: 0 var(--sp-5);
   border-radius: var(--r-md); box-shadow: var(--shadow-2);
 }
 @media (min-width: 520px) { .fab { right: calc(50% - 240px + var(--sp-4)); } }
@@ -265,7 +267,7 @@ a.pill > span.pill-inner { display: inline-flex; align-items: center; gap: var(-
 .sheet {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 51; max-height: 85vh; overflow: auto; margin: 0 auto; max-width: 480px;
   background: var(--surface); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: var(--shadow-2); border-top: 3px solid var(--accent);
-  padding: var(--sp-4) var(--sp-4) calc(var(--sp-5) + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-4) calc(var(--sp-5) + var(--inset-bottom)); display: flex; flex-direction: column; gap: var(--sp-4);
   animation: slide-up var(--dur-slow) var(--ease);
 }
 .dialog {
@@ -279,7 +281,7 @@ a.pill > span.pill-inner { display: inline-flex; align-items: center; gap: var(-
 @media (prefers-reduced-motion: reduce) { .sheet { animation-name: fade-in; } }
 
 .toast {
-  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(64px + var(--sp-8) + var(--sp-6) + env(safe-area-inset-bottom));
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(64px + var(--sp-8) + var(--sp-6) + var(--inset-bottom));
   z-index: 60; max-width: min(92vw, 440px); background: var(--text); color: var(--bg); padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-md); box-shadow: var(--shadow-2); font-weight: var(--fw-medium);
 }
@@ -306,7 +308,7 @@ a.pill > span.pill-inner { display: inline-flex; align-items: center; gap: var(-
 /* ── Editor ────────────────────────────────────────────────────────────── */
 .sticky-bar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; background: var(--bg); border-top: 1px solid var(--divider);
-  padding: var(--sp-3) max(var(--sp-4), env(safe-area-inset-right)) calc(var(--sp-3) + env(safe-area-inset-bottom)) max(var(--sp-4), env(safe-area-inset-left));
+  padding: var(--sp-3) max(var(--sp-4), var(--inset-right)) calc(var(--sp-3) + var(--inset-bottom)) max(var(--sp-4), var(--inset-left));
 }
 .sticky-bar > * { max-width: 448px; margin: 0 auto; }
 .mission-row { display: flex; align-items: center; gap: var(--sp-2); border-bottom: 1px solid var(--divider); padding: var(--sp-1) 0; }
@@ -396,7 +398,7 @@ a.pill > span.pill-inner { display: inline-flex; align-items: center; gap: var(-
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; border-top-color: var(--text-muted); } }
 .sound-gesture {
-  position: fixed; top: env(safe-area-inset-top); left: 50%; transform: translateX(-50%); z-index: 90;
+  position: fixed; top: var(--inset-top); left: 50%; transform: translateX(-50%); z-index: 90;
 }
 
 /* ── Stats ─────────────────────────────────────────────────────────────── */
@@ -457,7 +459,7 @@ table.data th, table.data td { text-align: left; padding: var(--sp-2) var(--sp-1
 .rail-now { position: absolute; left: -9px; top: -8px; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--bg); }
 .rail-now-label { position: absolute; left: var(--sp-4); top: -12px; font-size: var(--fs-sm); color: var(--accent-text); font-weight: var(--w-strong); text-transform: uppercase; letter-spacing: 0.08em; }
 .marks { list-style: none; margin: 0; padding: 0; }
-.mark { position: absolute; left: 0; right: 0; transform: translateY(-28px); }
+.mark { position: absolute; left: 0; right: 0; margin-top: -28px; }
 .mark::before { content: ""; position: absolute; left: -2px; top: 28px; width: 18px; height: 2px; background: var(--accent); }
 .mark .alarm-card { border-top: 0; padding-left: var(--sp-5); }
 .mark .alarm-card-main { padding-top: 0; }

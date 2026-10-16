@@ -33,8 +33,10 @@ export async function mount(vnode: ComponentChild): Promise<Rendered> {
   await act(() => {
     render(vnode, container);
   });
+  // Sheets and dialogs are portalled to <body>; search them too (but not other tests' containers).
+  const scope = () => [...container.querySelectorAll('*'), ...[...document.body.children].filter((c) => c.matches('.scrim, .sheet, .dialog')).flatMap((c) => [c, ...c.querySelectorAll('*')])];
   const all = (role: string, name?: string | RegExp) =>
-    [...container.querySelectorAll('*')].filter((el) => {
+    scope().filter((el) => {
       if (roleOf(el) !== role) return false;
       if (name === undefined) return true;
       const n = nameOf(el);

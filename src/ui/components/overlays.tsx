@@ -2,6 +2,7 @@
  * Sheet (bottom sheet) and Dialog (design.md §5). Modal, focus-trapped, restore focus on close.
  */
 import type { ComponentChildren } from 'preact';
+import { createPortal } from 'preact/compat';
 import { useEffect, useId, useRef } from 'preact/hooks';
 import { Button, type ButtonVariant } from './Button';
 
@@ -87,7 +88,9 @@ export function Sheet({ open, title, onClose, children, footer, dismissible = tr
   const titleId = useId();
   const ref = useModal(open, onClose, dismissible);
   if (!open) return null;
-  return (
+  // Portalled to <body>: a transformed ancestor (e.g. a timeline mark) would otherwise make position: fixed
+  // relative to it, shrinking the scrim to that ancestor so outside taps never close the sheet.
+  return createPortal(
     <>
       <div class="scrim" onClick={dismissible ? onClose : undefined} aria-hidden="true" />
       <div class="sheet" role="dialog" aria-modal="true" aria-labelledby={titleId} ref={ref}>
@@ -95,7 +98,8 @@ export function Sheet({ open, title, onClose, children, footer, dismissible = tr
         {children}
         {footer}
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
 
@@ -121,7 +125,7 @@ export function Dialog({ open, title, body, actions, destructive, onClose }: Dia
   const bodyId = useId();
   const ref = useModal(open, onClose, true);
   if (!open) return null;
-  return (
+  return createPortal(
     <>
       <div class="scrim" aria-hidden="true" onClick={onClose} />
       <div
@@ -142,6 +146,7 @@ export function Dialog({ open, title, body, actions, destructive, onClose }: Dia
           ))}
         </div>
       </div>
-    </>
+    </>,
+    document.body,
   );
 }
