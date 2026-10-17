@@ -19,6 +19,7 @@ const PERMISSION_ROWS: { id: HealthCheckId; title: string; okText: string; probl
   { id: 'notifications', title: 'Notifications', okText: 'Allowed', problem: "Off: Rouse can't show the alarm screen." },
   { id: 'exactAlarm', title: 'Alarms & reminders', okText: 'Allowed', problem: 'Off: alarms may ring late or not at all.' },
   { id: 'fullScreenIntent', title: 'Full-screen alerts', okText: 'Allowed', problem: 'Off: the alarm shows as a small banner instead of full screen.' },
+  { id: 'displayOverApps', title: 'Open over other apps', okText: 'Allowed', problem: 'Off: while you use the phone, the alarm shows as a banner instead of full screen.' },
   { id: 'batteryOptimization', title: 'Battery: unrestricted', okText: 'Unrestricted', problem: 'Optimised: Android may stop Rouse overnight.' },
 ];
 

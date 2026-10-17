@@ -405,6 +405,10 @@ public class RousePlugin extends Plugin implements RingEngine.EventSink {
                     outcome(call, "unsupported");
                 }
                 return;
+            case "displayOverApps":
+                if (HealthChecker.overlayAllowed(getContext())) outcome(call, "already-ok");
+                else openSettings(call, new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + pkg)));
+                return;
             case "batteryOptimization":
                 if (hc.batteryOk()) outcome(call, "already-ok");
                 else openSettings(call, batteryIntent(pkg));

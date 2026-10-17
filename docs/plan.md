@@ -267,13 +267,14 @@ All three agents work in parallel against the stubs. The orchestrator then:
 | exactAlarm | API < 31 → ok, else `canScheduleExactAlarms()` |
 | notifications | `areNotificationsEnabled()` and ring channel importance ≠ NONE |
 | fullScreenIntent | API < 34 → ok, else `canUseFullScreenIntent()` |
+| displayOverApps | `Settings.canDrawOverlays()`; when granted RingEngine also starts the ring activity itself (a full-screen intent is only a banner while the phone is in use) |
 | batteryOptimization | `isIgnoringBatteryOptimizations` |
 | backgroundRestricted | `isBackgroundRestricted()` (API 28+) |
 | dndAllowsAlarms | Interruption filter and policy alarm category; unknown on exception |
 | alarmVolume | STREAM_ALARM > 0 |
 | camera, motionSensors | Permission or sensor present |
 
-Severity: the first three are critical, battery/background/DND/volume are recommended, camera/motion are optional.
+Severity: the first three are critical, displayOverApps/battery/background/DND/volume are recommended, camera/motion are optional.
 
 ### 3.5 Storage (device-protected prefs `rouse_native`)
 ```

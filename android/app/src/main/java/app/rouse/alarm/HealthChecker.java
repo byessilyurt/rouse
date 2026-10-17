@@ -12,6 +12,7 @@ import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.PowerManager;
+import android.provider.Settings;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 import java.util.Locale;
@@ -23,8 +24,8 @@ import org.json.JSONObject;
 public final class HealthChecker {
 
     public static final String[] CHECK_IDS = {
-        "exactAlarm", "notifications", "fullScreenIntent", "batteryOptimization", "backgroundRestricted",
-        "dndAllowsAlarms", "alarmVolume", "camera", "motionSensors", "lockedDevice",
+        "exactAlarm", "notifications", "fullScreenIntent", "displayOverApps", "batteryOptimization",
+        "backgroundRestricted", "dndAllowsAlarms", "alarmVolume", "camera", "motionSensors", "lockedDevice",
     };
 
     private final Context context;
@@ -39,6 +40,7 @@ public final class HealthChecker {
         checks.put(exactAlarm());
         checks.put(notifications());
         checks.put(fullScreenIntent());
+        checks.put(displayOverApps());
         checks.put(batteryOptimization());
         checks.put(backgroundRestricted());
         checks.put(dndAllowsAlarms());
@@ -134,6 +136,26 @@ public final class HealthChecker {
             "critical",
             "open-settings",
             "Full-screen alarms are off, so the alarm only shows as a notification."
+        );
+    }
+
+    /**
+     * "Display over other apps". Android turns a full-screen intent into a heads-up banner while the
+     * phone is in use (and some phones on the lock screen too); this permission lets RingEngine open
+     * the ring screen itself instead.
+     */
+    public static boolean overlayAllowed(Context context) {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(context);
+    }
+
+    private JSONObject displayOverApps() throws JSONException {
+        if (overlayAllowed(context)) return check("displayOverApps", "ok", "recommended", "none", "The alarm opens full screen, even while you use the phone.");
+        return check(
+            "displayOverApps",
+            "action-needed",
+            "recommended",
+            "open-settings",
+            "The alarm may show as a banner instead of opening full screen."
         );
     }
 

@@ -53,6 +53,15 @@ public final class Notifications {
     // ── PendingIntents ──
 
     static PendingIntent ringUiIntent(Context context, Episode e) {
+        return PendingIntent.getActivity(
+            context,
+            RouseConstants.RC_RING_UI,
+            ringUiActivityIntent(context, e),
+            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+    }
+
+    static Intent ringUiActivityIntent(Context context, Episode e) {
         boolean locked = !UserManagerCompat.isUserUnlocked(context);
         Intent i;
         if (locked || e.nativeFallbackShown) {
@@ -65,12 +74,7 @@ public final class Notifications {
             i.putExtra(RouseConstants.EXTRA_RING_SESSION, e.sessionId);
             i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         }
-        return PendingIntent.getActivity(
-            context,
-            RouseConstants.RC_RING_UI,
-            i,
-            PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
+        return i;
     }
 
     static PendingIntent openAppIntent(Context context) {

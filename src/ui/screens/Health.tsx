@@ -26,6 +26,7 @@ const ROWS: RowSpec[] = [
   { id: 'notifications', title: 'Notifications', ok: 'Allowed', problem: "Off: Rouse can't show the alarm screen.", fix: 'Allow' },
   { id: 'exactAlarm', title: 'Alarms & reminders', ok: 'Allowed', problem: 'Off: alarms may ring late or not at all.', fix: 'Allow' },
   { id: 'fullScreenIntent', title: 'Full-screen alerts', ok: 'Allowed', problem: 'Off: the alarm shows as a small banner instead of full screen.', fix: 'Allow' },
+  { id: 'displayOverApps', title: 'Open over other apps', ok: 'Allowed', problem: 'Off: while you use the phone, the alarm shows as a banner instead of full screen.', fix: 'Allow' },
   { id: 'batteryOptimization', title: 'Battery', ok: 'Unrestricted', problem: 'Optimised: Android may stop Rouse overnight.', fix: 'Fix' },
   { id: 'backgroundRestricted', title: 'Background use', ok: 'Allowed', problem: 'Restricted: Android may stop Rouse in the background.', fix: 'Open settings' },
   { id: 'dndAllowsAlarms', title: 'Do Not Disturb', ok: 'Alarms allowed', problem: 'Do Not Disturb is blocking alarms.', fix: 'Open settings' },

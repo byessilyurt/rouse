@@ -24,6 +24,18 @@ export class CapabilityStore {
   get(): DeviceCapabilities {
     return { motion: this.state.motion, camera: this.state.camera };
   }
+  /**
+   * Capabilities for a ring's mission plan: a sensor still being probed counts as present. A ring
+   * cold-starts the app, so the plan is resolved before the first devicemotion event; treating
+   * "unknown" as "missing" swapped Walk/Shake/Squat for the fallback. Motion and QR missions report
+   * a sensor that never delivers (onUnavailable), which brings in the fallback at that point.
+   */
+  forRing(): DeviceCapabilities {
+    return {
+      motion: this.state.motion || !this.state.motionProbed,
+      camera: this.state.camera || !this.state.cameraProbed,
+    };
+  }
   get motionProbed(): boolean {
     return this.state.motionProbed;
   }

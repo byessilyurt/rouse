@@ -773,6 +773,7 @@ export class WebAlarmBackend implements AlarmBackend {
         na('exactAlarm', 'critical', 'Web pages cannot schedule exact system alarms.'),
         notif,
         na('fullScreenIntent', 'critical', 'Web pages cannot show a full-screen alarm over the lock screen.'),
+        na('displayOverApps', 'recommended', 'Web pages cannot open over other apps.'),
         na('batteryOptimization', 'recommended', 'Not applicable to the web demo.'),
         na('backgroundRestricted', 'recommended', 'Not applicable to the web demo.'),
         na('dndAllowsAlarms', 'recommended', 'Not applicable to the web demo.'),

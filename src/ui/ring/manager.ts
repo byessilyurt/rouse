@@ -127,7 +127,7 @@ export class RingManager {
         settings: this.deps.service.getSettings(),
         now: this.deps.now,
         rng: randomRng(),
-        capabilities: this.deps.caps.get(),
+        capabilities: this.deps.caps.forRing(),
         persist: (s) => {
           if (!ring.isTest) safe(() => this.deps.repo.saveRingProgress(s));
         },
@@ -188,7 +188,7 @@ export class RingManager {
         settings: this.deps.service.getSettings(),
         now: this.deps.now,
         rng: randomRng(),
-        capabilities: this.deps.caps.get(),
+        capabilities: this.deps.caps.forRing(),
       });
       ender.startMission();
       // startMission with an empty plan dismisses; wait for the backend round-trip.

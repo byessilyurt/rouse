@@ -330,6 +330,20 @@ public final class RingEngine {
         }
     }
 
+    /**
+     * Open the ring screen directly when "Display over other apps" allows a background activity
+     * start: the full-screen intent alone shows only a banner while the phone is in use. The
+     * notification's full-screen intent stays as the path without the permission.
+     */
+    private void launchRingUi(Episode e) {
+        if (!HealthChecker.overlayAllowed(app)) return;
+        try {
+            app.startActivity(Notifications.ringUiActivityIntent(app, e));
+        } catch (RuntimeException ex) {
+            DiagLog.e("engine", "direct ring UI launch failed; full-screen notification remains", ex);
+        }
+    }
+
     private void stopRingService() {
         try {
             app.stopService(new Intent(app, RingService.class));
@@ -884,6 +898,7 @@ public final class RingEngine {
         } finally {
             // Whatever failed above (logged by guarded()), the persisted episode MUST become audible now.
             startRingService(e);
+            launchRingUi(e);
             emitRing(e);
         }
     }
@@ -936,6 +951,7 @@ public final class RingEngine {
             logEvent(e, "ring-started", e.alarmId, fields("source", source, "scheduledFor", e.scheduledFor));
         } finally {
             startRingService(e);
+            launchRingUi(e);
             emitRing(e);
         }
     }
@@ -1027,6 +1043,7 @@ public final class RingEngine {
             scheduler.schedule(RouseConstants.RC_SAFETY, now + RouseConstants.SAFETY_RERING_INTERVAL_MS);
         } finally {
             startRingService(e);
+            launchRingUi(e);
             emitRing(e);
         }
     }

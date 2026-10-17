@@ -104,6 +104,7 @@ export type HealthCheckId =
   | 'exactAlarm' //          canScheduleExactAlarms() (USE_EXACT_ALARM normally makes this ok)
   | 'notifications' //       POST_NOTIFICATIONS (API 33+) and channel not blocked
   | 'fullScreenIntent' //    NotificationManager.canUseFullScreenIntent() (API 34+)
+  | 'displayOverApps' //     Settings.canDrawOverlays(): lets the ring screen open while the phone is in use
   | 'batteryOptimization' // PowerManager.isIgnoringBatteryOptimizations()
   | 'backgroundRestricted' //ActivityManager.isBackgroundRestricted() (API 28+)
   | 'dndAllowsAlarms' //     interruption filter / policy lets alarms through

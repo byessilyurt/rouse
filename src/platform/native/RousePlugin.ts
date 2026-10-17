@@ -84,6 +84,7 @@ export interface RousePluginApi {
    *  notifications → requestPermissionForAlias (POST_NOTIFICATIONS) on 33+, else open channel settings;
    *  exactAlarm → ACTION_REQUEST_SCHEDULE_EXACT_ALARM (31–32 only; 33+ USE_EXACT_ALARM is install-time);
    *  fullScreenIntent → ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT (34+);
+   *  displayOverApps → ACTION_MANAGE_OVERLAY_PERMISSION with package: URI;
    *  batteryOptimization → ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS with package: URI;
    *  backgroundRestricted / alarmVolume / dndAllowsAlarms → app details / sound settings / DND settings;
    *  camera → runtime CAMERA permission; motionSensors / lockedDevice → 'unsupported'.

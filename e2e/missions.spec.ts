@@ -128,8 +128,18 @@ test('9b · without motion events the motion mission offers the backup at once',
   const alarm = makeAlarm({ missions: [{ type: 'steps', count: 10 }] });
   await seed(page, { alarms: [alarm], settings: { fallback: { afterFailures: 3, afterMinutes: 5, mission: math(2, 1) as never } } });
   await open(page);
+  await page.waitForTimeout(1200); // let the 1 s motion probe finish without an event
   await ringNow(page, alarm.id);
   // No sensor on this "device": the plan already swaps steps for the backup mission (D-029).
   await page.getByRole('button', { name: /Start mission/ }).click();
   await expect(page.getByRole('heading', { name: /Mission 1 of 1 · Math/ })).toBeVisible();
+});
+
+test('9c · a ring during the motion probe keeps the motion mission (D-081)', async ({ page }) => {
+  const alarm = makeAlarm({ missions: [{ type: 'steps', count: 10 }] });
+  await seed(page, { alarms: [alarm], settings: { fallback: { afterFailures: 3, afterMinutes: 5, mission: math(2, 1) as never } } });
+  await open(page);
+  await ringNow(page, alarm.id);
+  await page.getByRole('button', { name: /Start mission/ }).click();
+  await expect(page.getByRole('heading', { name: /Mission 1 of 1 · Steps/ })).toBeVisible();
 });
