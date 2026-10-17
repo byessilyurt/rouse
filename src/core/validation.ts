@@ -418,6 +418,8 @@ export function parseSettings(raw: unknown): Settings {
   const bt = isRecord(raw.bedtimeReminder) ? raw.bedtimeReminder : {};
   return {
     theme: oneOf(raw.theme, ['wake', 'system', 'light', 'dark'] as const, d.theme),
+    accent: oneOf(raw.accent, ['violet', 'blue', 'teal', 'green', 'pink', 'graphite'] as const, d.accent),
+    ringColor: oneOf(raw.ringColor, ['lime', 'cyan', 'pink', 'violet', 'yellow', 'white'] as const, d.ringColor),
     clockFormat: oneOf(raw.clockFormat, ['system', '12h', '24h'] as const, d.clockFormat),
     weekStartsOn: oneOf(raw.weekStartsOn, [0, 1] as const, d.weekStartsOn),
     alarmDefaults: parseAlarmDefaults(raw.alarmDefaults, d.alarmDefaults),

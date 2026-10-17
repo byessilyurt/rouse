@@ -64,6 +64,8 @@ export function Toggle({ checked, onChange, label, visibleLabel, description, sh
 export interface SegmentedOption<T> {
   value: T;
   label: string;
+  /** CSS background for a colour dot shown before the label (colour pickers; the label still names it). */
+  swatch?: string;
 }
 export interface SegmentedProps<T> {
   options: readonly SegmentedOption<T>[];
@@ -119,6 +121,7 @@ export function Segmented<T extends string | number>({ options, value, onChange,
             onClick={() => onChange(o.value)}
           >
             {selected && <Icon name="check" size={16} />}
+            {o.swatch && <span class="swatch-dot" aria-hidden="true" style={{ background: o.swatch }} />}
             {o.label}
           </button>
         );

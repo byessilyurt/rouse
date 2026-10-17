@@ -14,6 +14,7 @@ import { summarizeHealth, useHealth } from '../health';
 import { Icon } from '../icons';
 import { navigate } from '../router';
 import { setNotice } from '../notices';
+import { ACCENTS, RING_COLORS, ringById, type RingSwatch } from '../palette';
 
 export const SOURCE_URL = 'https://github.com/byessilyurt/rouse';
 
@@ -145,6 +146,31 @@ export function SettingsScreen() {
             onChange={(theme) => update({ theme: theme as Settings['theme'] })}
           />
           <p class="muted small">Follow the day: dim and soft at night, bright and bold when it rings.</p>
+        </div>
+        <div class="field">
+          <span class="field-label" id="lbl-accent">
+            Accent colour
+          </span>
+          <Segmented
+            labelledBy="lbl-accent"
+            label="Accent colour"
+            options={ACCENTS.map((a) => ({ value: a.id, label: a.name, swatch: `linear-gradient(135deg, ${a.n1[0]} 50%, ${a.d1[0]} 50%)` }))}
+            value={s.accent}
+            onChange={(accent) => update({ accent })}
+          />
+        </div>
+        <div class="field">
+          <span class="field-label" id="lbl-ring">
+            Ring screen colour
+          </span>
+          <Segmented
+            labelledBy="lbl-ring"
+            label="Ring screen colour"
+            options={RING_COLORS.map((r) => ({ value: r.id, label: r.name, swatch: r.signal }))}
+            value={s.ringColor}
+            onChange={(ringColor) => update({ ringColor })}
+          />
+          <RingPreview ring={ringById(s.ringColor)} />
         </div>
         <Toggle checked={use24h} onChange={(v) => update({ clockFormat: v ? '24h' : '12h' })} label="24-hour clock" />
         <div class="field">
@@ -363,4 +389,16 @@ export function SettingsScreen() {
 
 function withCurrent(values: number[], current: number): number[] {
   return values.includes(current) ? values : [...values, current].sort((a, b) => a - b);
+}
+
+/** What the ring screen will look like with the chosen colour (only with "Follow the day" or Light). */
+function RingPreview({ ring }: { ring: RingSwatch }) {
+  return (
+    <div class="ring-preview" aria-hidden="true" style={{ background: ring.signal, color: ring.onSignal }}>
+      <span class="ring-preview-clock">06:30</span>
+      <span class="ring-preview-btn" style={{ background: ring.onSignal, color: ring.signal }}>
+        Keep my word
+      </span>
+    </div>
+  );
 }

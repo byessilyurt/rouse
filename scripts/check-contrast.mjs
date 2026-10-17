@@ -33,45 +33,59 @@ const mix = (a, b, t) => fromOklab(toOklab(hex(a)).map((v, i) => v + (toOklab(he
 const lum = (rgb) => rgb.map(lin).reduce((s, c, i) => s + c * [0.2126, 0.7152, 0.0722][i], 0);
 const ratio = (x, y) => { const [a, b] = [lum(x), lum(y)].sort((p, q) => q - p); return (a + 0.05) / (b + 0.05); };
 
-// [foreground, background, minimum]
+// Swatches are the single source in src/ui/palette.ts (Node 22 strips its types on import).
+const { ACCENTS, RING_COLORS } = await import('../src/ui/palette.ts');
+
+// [foreground, background, minimum] over the neutrals in tokens.css.
 const PAIRS = [
   ['text', 'bg', 4.5], ['text', 'surface', 4.5], ['text', 'surface-2', 4.5],
   ['muted', 'bg', 4.5], ['muted', 'surface', 4.5],
-  ['accent-text', 'bg', 4.5], ['accent-text', 'surface', 4.5],
-  ['accent', 'bg', 3], ['border', 'bg', 3], ['border', 'surface', 3],
+  ['border', 'bg', 3], ['border', 'surface', 3],
 ];
-const ON_ACCENT = { n: '#0c0a24', d: '#ffffff' };
 const failures = [];
+let checked = 0;
+const check = (label, fg, bg, min) => {
+  checked++;
+  const r = ratio(fg, bg);
+  if (r < min) failures.push(`${label} = ${r.toFixed(2)} (< ${min})`);
+};
 for (const regime of ['n', 'd']) {
+  const name = regime === 'n' ? 'night' : 'day';
   for (const t of [0, 0.25, 0.5, 0.75, 1]) {
-    const c = (name) => {
-      const a = tok[`${regime}0-${name}`];
-      const b = tok[`${regime}1-${name}`];
-      if (!a || !b) throw new Error(`missing token --${regime}0-${name} / --${regime}1-${name}`);
+    const c = (key) => {
+      const a = tok[`${regime}0-${key}`];
+      const b = tok[`${regime}1-${key}`];
+      if (!a || !b) throw new Error(`missing token --${regime}0-${key} / --${regime}1-${key}`);
       return mix(a, b, t);
     };
-    for (const [fg, bg, min] of PAIRS) {
-      const r = ratio(c(fg), c(bg));
-      if (r < min) failures.push(`${regime === 'n' ? 'night' : 'day'} t=${t}: ${fg} on ${bg} = ${r.toFixed(2)} (< ${min})`);
+    for (const [fg, bg, min] of PAIRS) check(`${name} t=${t}: ${fg} on ${bg}`, c(fg), c(bg), min);
+    for (const a of ACCENTS) {
+      const [acc0, txt0] = a[`${regime}0`];
+      const [acc1, txt1] = a[`${regime}1`];
+      const accent = mix(acc0, acc1, t);
+      const accentText = mix(txt0, txt1, t);
+      const label = `${name} t=${t} accent ${a.id}`;
+      check(`${label}: accent-text on bg`, accentText, c('bg'), 4.5);
+      check(`${label}: accent-text on surface`, accentText, c('surface'), 4.5);
+      check(`${label}: accent on bg`, accent, c('bg'), 3);
+      check(`${label}: on-accent on accent`, hex(regime === 'n' ? a.onNight : a.onDay), accent, 4.5);
     }
-    const r = ratio(hex(ON_ACCENT[regime]), c('accent'));
-    if (r < 4.5) failures.push(`${regime === 'n' ? 'night' : 'day'} t=${t}: on-accent on accent = ${r.toFixed(2)} (< 4.5)`);
   }
 }
-// Ring screen (data-signal): signal page, its surfaces, and day-regime status colours used in banners there.
+// Ring screen: signal page, its surfaces, and day-regime status colours used in banners there.
 const DAY_STATUS = { info: '#2457a8', warn: '#645600', danger: '#b3261e' };
-for (const [name, c] of Object.entries(DAY_STATUS)) {
-  for (const bg of ['signal-surface', 'signal-surface-2']) {
-    const r = ratio(hex(c), hex(tok[bg]));
-    if (r < 4.5) failures.push(`${name} on ${bg} = ${r.toFixed(2)} (< 4.5)`);
+for (const r of RING_COLORS) {
+  const label = `ring ${r.id}`;
+  check(`${label}: on-signal on signal`, hex(r.onSignal), hex(r.signal), 4.5);
+  check(`${label}: signal-muted on signal`, hex(r.signalMuted), hex(r.signal), 4.5);
+  for (const [bgName, bg] of [['surface', r.surface], ['surface-2', r.surface2]]) {
+    check(`${label}: on-signal on ${bgName}`, hex(r.onSignal), hex(bg), 4.5);
+    check(`${label}: signal-muted on ${bgName}`, hex(r.signalMuted), hex(bg), 4.5);
+    for (const [s, c] of Object.entries(DAY_STATUS)) check(`${label}: ${s} on ${bgName}`, hex(c), hex(bg), 4.5);
   }
-}
-for (const [fg, bg] of [['on-signal', 'signal'], ['signal-muted', 'signal'], ['on-signal', 'signal-surface'], ['on-signal', 'signal-surface-2'], ['signal-muted', 'signal-surface-2']]) {
-  const r = ratio(hex(tok[fg]), hex(tok[bg]));
-  if (r < 4.5) failures.push(`${fg} on ${bg} = ${r.toFixed(2)} (< 4.5)`);
 }
 if (failures.length) {
   console.error(`Contrast check failed:\n  ${failures.join('\n  ')}`);
   process.exit(1);
 }
-console.log(`Contrast OK: ${PAIRS.length + 1} pairs × 5 wake levels × 2 regimes, plus the signal pairs.`);
+console.log(`Contrast OK: ${checked} pairs (${ACCENTS.length} accents, ${RING_COLORS.length} ring colours, both regimes, 5 wake levels).`);

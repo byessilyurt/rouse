@@ -356,9 +356,16 @@ export interface BedtimeReminderSettings {
   sleepGoalMin: number;
 }
 
+export type AccentId = 'violet' | 'blue' | 'teal' | 'green' | 'pink' | 'graphite';
+export type RingColorId = 'lime' | 'cyan' | 'pink' | 'violet' | 'yellow' | 'white';
+
 export interface Settings {
   /** 'wake' (default) picks the colour regime from the wake level (design-language.md §1.3). */
   theme: 'wake' | 'system' | 'light' | 'dark';
+  /** Accent swatch (src/ui/palette.ts). */
+  accent: AccentId;
+  /** Full-screen colour while ringing (src/ui/palette.ts). */
+  ringColor: RingColorId;
   /** 'system' follows the device locale/setting. */
   clockFormat: 'system' | '12h' | '24h';
   /** First column of the day picker. Display only. */

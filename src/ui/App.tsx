@@ -6,6 +6,7 @@ import type { ComponentChildren } from 'preact';
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import { AppContext, emitHealthChanged, useApp, useRingManager, useService, type AppDeps } from './context';
 import { circadianWake, getWakeOverride, subscribeWake } from './wake';
+import { paletteVars } from './palette';
 import { LiveRegions } from './components/feedback';
 import { navigate, useLocation, type Location } from './router';
 import { Onboarding } from './screens/Onboarding';
@@ -226,11 +227,12 @@ function Routes() {
 function ThemeSync() {
   const service = useService();
   const { now } = useApp();
-  const theme = service.getSettings().theme;
+  const { theme, accent, ringColor } = service.getSettings();
   // Layout effect: set the regime before the first paint so the app never flashes the wrong one.
   useLayoutEffect(() => {
     const root = document.documentElement;
     const mq = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
+    for (const [k, v] of Object.entries(paletteVars(accent, ringColor))) root.style.setProperty(k, v);
     const apply = () => {
       const wake = getWakeOverride() ?? circadianWake(new Date(now()));
       root.style.setProperty('--wake', wake.toFixed(3));
@@ -248,7 +250,7 @@ function ThemeSync() {
       clearInterval(tick);
       mq?.removeEventListener?.('change', apply);
     };
-  }, [theme, now]);
+  }, [theme, accent, ringColor, now]);
   return null;
 }
 

@@ -73,3 +73,18 @@ test('14 · Reliability on the web says it cannot wake a locked phone', async ({
   await page.getByRole('radio', { name: 'Dark' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
+
+test('C1 · accent and ring colours change the app and are remembered', async ({ page }) => {
+  await seed(page);
+  await open(page, '/settings');
+  const accentVar = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--d1-accent').trim());
+  const before = await accentVar();
+  await page.getByRole('radiogroup', { name: 'Accent colour' }).getByRole('radio', { name: 'Teal' }).click();
+  await expect(page.getByRole('radio', { name: 'Teal' })).toHaveAttribute('aria-checked', 'true');
+  expect(await accentVar()).not.toBe(before);
+  await page.getByRole('radiogroup', { name: 'Ring screen colour' }).getByRole('radio', { name: 'Cyan' }).click();
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--signal').trim())).toBe('#3ee8ff');
+  await page.reload();
+  await expect(page.getByRole('radio', { name: 'Teal' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('radio', { name: 'Cyan' })).toHaveAttribute('aria-checked', 'true');
+});

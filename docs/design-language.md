@@ -64,6 +64,14 @@ screen into the signal page; Dark and System (when the OS is dark) ring in the d
 
 ---
 
+### 1.4 Colour choices
+
+Settings → Appearance offers 6 accents (Violet, the default, plus Blue, Teal, Green, Pink and Graphite) and 6 ring screen colours (Lime,
+the default, plus Cyan, Pink, Violet, Yellow and White), shown as named swatches with a check mark on the selected one. Each accent defines
+both regimes; each ring colour defines its surfaces. The swatches live in `src/ui/palette.ts`, ThemeSync applies them, and
+`scripts/check-contrast.mjs` checks every swatch in both regimes at 5 wake levels. A free colour picker is deliberately not offered:
+arbitrary colours can't be guaranteed readable.
+
 **Palette rule:** no orange, amber or cream anywhere; that combination reads as another brand. Night is lavender on
 violet-black, day is ultramarine on cool white, and the ring signal is acid lime with near-black text.
 

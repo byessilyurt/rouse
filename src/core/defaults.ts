@@ -414,6 +414,8 @@ export function defaultAlarmDefaults(): AlarmDefaults {
 export function defaultSettings(): Settings {
   return {
     theme: 'wake',
+    accent: 'violet',
+    ringColor: 'lime',
     clockFormat: 'system',
     weekStartsOn: 1,
     alarmDefaults: defaultAlarmDefaults(),

@@ -34,8 +34,6 @@
   --n0-muted: #9493aa;   --n1-muted: #b6b5ca;
   --n0-rule: #23232f;    --n1-rule: #31313f;
   --n0-border: #75748e;  --n1-border: #8f8ea8;
-  --n0-accent: #8e80f0;  --n1-accent: #b2a6ff;
-  --n0-accent-text: #a497ff; --n1-accent-text: #c6bcff;
 
   --d0-bg: #e9ebf1;      --d1-bg: #fafbfd;
   --d0-surface: #f3f4f8; --d1-surface: #ffffff;
@@ -44,11 +42,9 @@
   --d0-muted: #4d5061;   --d1-muted: #4a4d5c;
   --d0-rule: #d0d3dd;    --d1-rule: #e2e4ea;
   --d0-border: #707387;  --d1-border: #737689;
-  --d0-accent: #3a34c4;  --d1-accent: #2b20f0;
-  --d0-accent-text: #332db0; --d1-accent-text: #2419d0;
 
-  --signal: #c8ff2e;     --on-signal: #0b0d05;   --signal-muted: #33400c;
-  --signal-surface: #ecffbd; --signal-surface-2: #ddff8f;
+  /* Accent (--[nd][01]-accent[-text], --on-accent-night/day) and ring (--signal*) colours are set on <html>
+     by ThemeSync from the chosen swatches in src/ui/palette.ts. */
 }
 
 :root:not([data-theme="light"]) {
@@ -57,7 +53,7 @@
   --bg: var(--n1-bg); --surface: var(--n1-surface); --surface-2: var(--n1-surface-2);
   --text: var(--n1-text); --text-muted: var(--n1-muted); --divider: var(--n1-rule); --rule: var(--n1-rule);
   --border: var(--n1-border); --accent: var(--n1-accent); --accent-text: var(--n1-accent-text);
-  --on-accent: #0c0a24;
+  --on-accent: var(--on-accent-night);
   --danger: #ff8a9a;  --on-danger: #200610; --danger-bg: #3a1520;
   --ok: #7bd896;      --ok-bg: #16301f;
   --warn: #ecd75a;    --warn-bg: #2e2b0c;
@@ -72,7 +68,7 @@
   --bg: var(--d1-bg); --surface: var(--d1-surface); --surface-2: var(--d1-surface-2);
   --text: var(--d1-text); --text-muted: var(--d1-muted); --divider: var(--d1-rule); --rule: var(--d1-rule);
   --border: var(--d1-border); --accent: var(--d1-accent); --accent-text: var(--d1-accent-text);
-  --on-accent: #ffffff;
+  --on-accent: var(--on-accent-day);
   --danger: #b3261e;  --on-danger: #ffffff; --danger-bg: #fbe4e1;
   --ok: #1f6b37;      --ok-bg: #e3f3e7;
   --warn: #645600;    --warn-bg: #f6f1cf;
