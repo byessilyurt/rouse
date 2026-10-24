@@ -252,6 +252,13 @@ public class RousePlugin extends Plugin implements RingEngine.EventSink {
     }
 
     @PluginMethod
+    public void releaseLockScreen(PluginCall call) {
+        android.app.Activity act = getActivity();
+        if (act instanceof MainActivity) act.runOnUiThread(((MainActivity) act)::releaseLockScreen);
+        call.resolve();
+    }
+
+    @PluginMethod
     public void getLog(PluginCall call) {
         Long after = optLong(call, "afterSeq");
         final long afterSeq = after == null ? 0L : after;

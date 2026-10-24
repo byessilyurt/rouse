@@ -190,3 +190,23 @@ test('editor: "Try it now" practice and "Test this alarm" with "End test"', asyn
   await expect(page.getByRole('heading', { name: 'New alarm' })).toBeVisible();
   expect(await page.evaluate(() => window.__rouseTest!.inspect().log)).toEqual([]);
 });
+
+test('timeline: alarms a minute apart do not overlap (D-083)', async ({ page }) => {
+  await installClock(page, T0);
+  // T0 is 06:00 London (the e2e zone): these ring at 08:00, 08:01 and 08:02.
+  const near = (i: number, label: string) =>
+    makeAlarm({ hour: 8, minute: i, days: [0, 1, 2, 3, 4, 5, 6], label, missions: [{ type: 'math', difficulty: 2, count: 3 }] });
+  await seed(page, { alarms: [near(0, 'Gym'), near(1, 'Backup'), near(2, 'Last chance with a long label here')] });
+  await open(page);
+  const cards = page.getByTestId('timeline').locator('.marks > li');
+  await expect(cards).toHaveCount(3);
+  // Marks are re-laid out once their heights are measured; wait for that to settle.
+  await expect
+    .poll(() =>
+      cards.evaluateAll((els) => {
+        const r = els.map((el) => el.getBoundingClientRect());
+        return r.every((b, i) => i === 0 || b.top >= r[i - 1]!.bottom);
+      }),
+    )
+    .toBe(true);
+});

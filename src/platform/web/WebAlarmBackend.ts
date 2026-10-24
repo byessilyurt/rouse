@@ -675,6 +675,10 @@ export class WebAlarmBackend implements AlarmBackend {
     return { wakeCheckAt };
   }
 
+  async releaseLockScreen(): Promise<void> {
+    // A web page never shows over the lock screen.
+  }
+
   async confirmAwake(sessionId: string): Promise<void> {
     const ep = this.requireSession(sessionId);
     if (ep.state !== 'wake-check-wait' && ep.state !== 'wake-check-prompt') throw rejectWith('NO_ACTIVE_RING', 'No wake-up check');

@@ -127,6 +127,7 @@ export class FakeBackend implements AlarmBackend {
   snooze = vi.fn(async () => ({ snoozeUntil: 0 }));
   dismiss = vi.fn(async () => ({ wakeCheckAt: null }));
   confirmAwake = vi.fn(async () => {});
+  releaseLockScreen = vi.fn(async () => {});
   getLog = vi.fn(async (afterSeq: number) => this.log.filter((e) => e.seq > afterSeq));
   ackLog = vi.fn(async (through: number) => {
     this.acked = through;

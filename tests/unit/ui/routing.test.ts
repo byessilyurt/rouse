@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchRoute, isLockedRoute } from '../../../src/ui/App';
+import { matchRoute, isLockedRoute, showsOverLockRoute } from '../../../src/ui/App';
 import { parseHash } from '../../../src/ui/router';
 import { summarizeHealth } from '../../../src/ui/health';
 import { editorIssues, sectionOf, unregisteredQrIndexes } from '../../../src/ui/screens/AlarmEditor';
@@ -28,6 +28,10 @@ describe('hash routes (design.md §2)', () => {
   it('marks ring, mission, fallback and wake-check routes as locked', () => {
     for (const h of ['#/ring', '#/ring/mission/0', '#/ring/fallback', '#/wakecheck']) expect(isLockedRoute(parseHash(h))).toBe(true);
     for (const h of ['#/alarms', '#/snoozed', '#/done', '#/health']) expect(isLockedRoute(parseHash(h))).toBe(false);
+  });
+  it('keeps only the ring and post-ring screens over the lock screen (D-082)', () => {
+    for (const h of ['#/ring', '#/ring/mission/0', '#/ring/fallback', '#/wakecheck', '#/done', '#/snoozed']) expect(showsOverLockRoute(parseHash(h))).toBe(true);
+    for (const h of ['#/alarms', '#/alarm/x', '#/settings', '#/health', '#/stats']) expect(showsOverLockRoute(parseHash(h))).toBe(false);
   });
 });
 

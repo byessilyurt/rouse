@@ -1,5 +1,6 @@
 package app.rouse.alarm;
 
+import android.app.KeyguardManager;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -11,8 +12,10 @@ import com.getcapacitor.BridgeActivity;
 
 /**
  * The single WebView activity (D-018). While an episode is ringing it shows over the lock screen,
- * turns the screen on, keeps it on, blocks Back and consumes the volume keys; the flags are cleared
- * when the ring ends. Ring / wake-check full-screen intents arrive here with
+ * turns the screen on, keeps it on, blocks Back and consumes the volume keys. When the ring ends
+ * the activity stays over the lock screen (screen no longer held on) so the Done / Snoozed screen is
+ * seen; it drops behind the keyguard when the activity stops or JS calls releaseLockScreen() on
+ * leaving those screens (D-082). Ring / wake-check full-screen intents arrive here with
  * EXTRA_RING_SESSION / EXTRA_WAKE_CHECK_SESSION.
  */
 public class MainActivity extends BridgeActivity implements RingEngine.UiListener {
@@ -20,6 +23,8 @@ public class MainActivity extends BridgeActivity implements RingEngine.UiListene
     private OnBackPressedCallback backBlocker;
     private boolean ringMode;
     private boolean lockScreenFlags;
+    /** Wake-check prompt on screen: like ring mode, the lock-screen flags must not be released. */
+    private boolean promptMode;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -60,6 +65,8 @@ public class MainActivity extends BridgeActivity implements RingEngine.UiListene
     @Override
     public void onStop() {
         RingEngine.get(this).removeUiListener(this);
+        // Screen off or the user left: a finished ring no longer needs to show over the lock screen.
+        if (!ringMode && !promptMode) setLockScreenFlags(false);
         super.onStop();
     }
 
@@ -81,14 +88,51 @@ public class MainActivity extends BridgeActivity implements RingEngine.UiListene
     @Override
     public void onEpisodeChanged(Episode episode) {
         if (episode != null && episode.isRinging()) {
+            promptMode = false;
             setRingMode(true);
         } else if (episode != null && Episode.STATE_WAKE_CHECK_PROMPT.equals(episode.state)) {
+            promptMode = true;
             setRingMode(false);
             setLockScreenFlags(true);
         } else {
+            promptMode = false;
             setRingMode(false);
+            // Keep showing over the lock screen (Done / Snoozed) but let the screen time out.
+            if (lockScreenFlags) getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+    }
+
+    /**
+     * JS left the post-ring screens. Drop the lock-screen flags; on a locked phone ask for the
+     * unlock first, so the rest of the app is never usable over the keyguard.
+     */
+    public void releaseLockScreen() {
+        if (ringMode || promptMode || !lockScreenFlags) return;
+        KeyguardManager km = getSystemService(KeyguardManager.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && km != null && km.isKeyguardLocked()) {
+            km.requestDismissKeyguard(this, new KeyguardManager.KeyguardDismissCallback() {
+                @Override
+                public void onDismissSucceeded() {
+                    releaseIfIdle();
+                }
+
+                @Override
+                public void onDismissCancelled() {
+                    releaseIfIdle();
+                }
+
+                @Override
+                public void onDismissError() {
+                    releaseIfIdle();
+                }
+            });
+        } else {
             setLockScreenFlags(false);
         }
+    }
+
+    private void releaseIfIdle() {
+        if (!ringMode && !promptMode) setLockScreenFlags(false);
     }
 
     @Override
