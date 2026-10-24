@@ -1,5 +1,5 @@
 /** Home: the timeline (design-language.md §5.1). Height on the rail is real time; same data as design.md §3.2. */
-import { useState } from 'preact/hooks';
+import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import type { Alarm } from '../../core/types';
 import { isSkipping, napTime, nextOccurrence } from '../../core/schedule';
 import { Button, IconButton } from '../components/Button';
@@ -196,9 +196,23 @@ export function AlarmList() {
 
 const DAY_MS = 86_400_000;
 const HOUR_MS = 3_600_000;
-/** Rail scale: 24 h = 24 × HOUR_PX. Marks keep MIN_GAP_PX apart; the printed time stays exact. */
+/**
+ * Rail scale: 24 h = 24 × HOUR_PX. A mark sits at its time unless the card above would overlap it;
+ * then it is pushed below that card (measured height + MARK_SPACE_PX, D-083). The printed time stays exact.
+ */
 const HOUR_PX = 30;
 const MIN_GAP_PX = 84;
+const MARK_SPACE_PX = 12;
+
+/** Rail offsets for marks, given each card's rendered height (0 = not measured yet). */
+export function markOffsets(times: readonly number[], heights: readonly number[]): number[] {
+  const ys: number[] = [];
+  times.forEach((y, i) => {
+    const prev = i > 0 ? ys[i - 1]! + Math.max(MIN_GAP_PX, (heights[i - 1] ?? 0) + MARK_SPACE_PX) : 0;
+    ys.push(Math.max(y, MIN_GAP_PX * 0.5, prev));
+  });
+  return ys;
+}
 
 interface Placed {
   alarm: Alarm;
@@ -207,9 +221,29 @@ interface Placed {
 
 function Timeline({ alarms, now, use24h, weekStart }: { alarms: Placed[]; now: number; use24h: boolean; weekStart: 0 | 1 }) {
   const yOf = (at: number) => ((at - now) / HOUR_MS) * HOUR_PX;
-  const ys: number[] = [];
-  for (const p of alarms) ys.push(Math.max(yOf(p.at), MIN_GAP_PX * 0.5, ys.length ? ys[ys.length - 1]! + MIN_GAP_PX : 0));
-  const height = Math.max(24 * HOUR_PX, (ys[ys.length - 1] ?? 0) + MIN_GAP_PX);
+  const listRef = useRef<HTMLUListElement>(null);
+  const [heights, setHeights] = useState<number[]>([]);
+  const ids = alarms.map((p) => p.alarm.id).join(' ');
+  useLayoutEffect(() => {
+    const ul = listRef.current;
+    if (!ul) return;
+    const items = [...ul.children] as HTMLElement[];
+    const measure = () => {
+      const hs = items.map((li) => li.offsetHeight);
+      setHeights((prev) => (prev.length === hs.length && prev.every((h, i) => h === hs[i]) ? prev : hs));
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    for (const li of items) ro.observe(li);
+    return () => ro.disconnect();
+  }, [ids]);
+  const ys = markOffsets(
+    alarms.map((p) => yOf(p.at)),
+    heights,
+  );
+  const last = ys.length - 1;
+  const height = Math.max(24 * HOUR_PX, last >= 0 ? ys[last]! + Math.max(MIN_GAP_PX, heights[last] ?? 0) : 0);
   const firstHour = Math.ceil(now / HOUR_MS) * HOUR_MS;
   const hours: { y: number; label: string | null }[] = [];
   for (let h = firstHour; h <= now + DAY_MS; h += HOUR_MS) {
@@ -242,7 +276,7 @@ function Timeline({ alarms, now, use24h, weekStart }: { alarms: Placed[]; now: n
         <span class="rail-end">+24 h</span>
       </div>
       {alarms.length > 0 && (
-        <ul class="marks" aria-label="Alarms in the next 24 hours">
+        <ul class="marks" ref={listRef} aria-label="Alarms in the next 24 hours">
           {alarms.map((p, i) => (
             <AlarmCard key={p.alarm.id} alarm={p.alarm} now={now} use24h={use24h} weekStart={weekStart} liClass="mark" liStyle={`top: ${ys[i]}px`} />
           ))}
