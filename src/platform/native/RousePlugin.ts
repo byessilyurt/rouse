@@ -158,6 +158,13 @@ export interface RousePluginApi {
    */
   confirmAwake(options: { sessionId: string }): Promise<void>;
 
+  /**
+   * The UI left the post-ring screens. MainActivity keeps showWhenLocked after a ring ends so Done /
+   * Snoozed stay visible; this drops it (requestDismissKeyguard first on a locked phone). Ignored
+   * while ringing or during a wake-check prompt. Always resolves.
+   */
+  releaseLockScreen(): Promise<void>;
+
   /** Log events with seq > afterSeq, ascending. `lastSeq` = highest seq ever issued (0 if none). */
   getLog(options: { afterSeq: number }): Promise<{ events: AlarmLogEvent[]; lastSeq: number }>;
 

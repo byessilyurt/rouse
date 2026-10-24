@@ -254,6 +254,8 @@ export interface AlarmBackend {
   dismiss(token: DismissToken): Promise<DismissResult>;
   /** User confirmed the wake-up check ("I'm awake"). Ends the episode. */
   confirmAwake(sessionId: string): Promise<void>;
+  /** The UI left the ring / Done / Snoozed screens: stop showing over the lock screen (asks to unlock first). No-op on web. */
+  releaseLockScreen(): Promise<void>;
 
   // ── Durable log ───────────────────────────────────────────────────────────
   /** Events with seq > afterSeq, ascending. */

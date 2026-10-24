@@ -95,6 +95,12 @@ export function matchRoute(loc: Location): RouteMatch {
 
 const LOCKED = new Set(['ring', 'mission', 'fallback', 'wakecheck']);
 const RING_ROUTES = new Set(['ring', 'mission', 'fallback']);
+/** Screens that may show over the lock screen after a ring; leaving them releases it (D-082). */
+const OVER_LOCK = new Set(['ring', 'mission', 'fallback', 'done', 'snoozed', 'wakecheck']);
+
+export function showsOverLockRoute(loc: Location): boolean {
+  return OVER_LOCK.has(matchRoute(loc).name);
+}
 
 export function isLockedRoute(loc: Location): boolean {
   return LOCKED.has(matchRoute(loc).name);
@@ -145,6 +151,7 @@ function Routes() {
   const [loc, kind] = useLocation();
   const service = useService();
   const ringMgr = useRingManager();
+  const { backend } = useApp();
   const match = matchRoute(loc);
   const ring = ringMgr.getRing();
   const settings = service.getSettings();
@@ -166,6 +173,11 @@ function Routes() {
   useEffect(() => {
     if (redirect) navigate(redirect, { replace: true });
   }, [redirect, loc.href]);
+
+  const overLock = OVER_LOCK.has(match.name);
+  useEffect(() => {
+    if (!redirect && !overLock) backend.releaseLockScreen().catch(() => undefined);
+  }, [overLock, redirect]);
 
   // Route-change contract: focus the screen's H1 (or [data-initial-focus]), scroll to top
   // except when returning to the list.

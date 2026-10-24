@@ -139,6 +139,10 @@ export function createNativeAlarmBackend(): AlarmBackend {
       return Rouse.confirmAwake({ sessionId });
     },
 
+    releaseLockScreen(): Promise<void> {
+      return Rouse.releaseLockScreen();
+    },
+
     async getLog(afterSeq: number): Promise<AlarmLogEvent[]> {
       return (await Rouse.getLog({ afterSeq })).events;
     },
